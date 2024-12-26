@@ -1,0 +1,21 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: 5
+  username: <YOUR_DB_USER>
+  password:
+  host: localhost
+
+development:
+  <<: *default
+  database: trackcore_backend_development
+
+test:
+  <<: *default
+  database: trackcore_backend_test
+
+production:
+  <<: *default
+  database: trackcore_backend_production
+  username: <YOUR_PRODUCTION_USER>
+  password: <SOME_SECURE_VALUE>
