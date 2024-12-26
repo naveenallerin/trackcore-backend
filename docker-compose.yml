@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    container_name: trackcore_db
+    environment:
+      POSTGRES_USER: trackcore
+      POSTGRES_PASSWORD: secret123
+      POSTGRES_DB: trackcore_development
+    ports:
+      - "5432:5432"
+    # For local dev, we mount a volume so data persists if container is restarted.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trackcore_app
+    # Depending on your approach, you might pass env vars either here or in an .env file
+    environment:
+      # Rails expects database config to match:
+      DB_USER: trackcore
+      DB_PASSWORD: secret123
+      DB_HOST: db
+      # Force rails to run dev mode in container:
+      RAILS_ENV: development
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    volumes:
+      # Mount local code inside container for live reloading in dev:
+      - .:/app
+    # If you want to run sidekiq or something else, override entrypoint or command here.
+    # For now we rely on Dockerfile's default CMD.
+
+volumes:
+  postgres_data:

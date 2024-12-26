@@ -1,21 +1,20 @@
 default: &default
   adapter: postgresql
   encoding: unicode
-  pool: 5
-  username: <YOUR_DB_USER>
-  password:
-  host: localhost
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
+  username: <%= ENV.fetch("DB_USER", "trackcore") %>
+  password: <%= ENV.fetch("DB_PASSWORD", "secret123") %>
+  host: <%= ENV.fetch("DB_HOST", "db") %>
+  port: <%= ENV.fetch("DB_PORT", "5432") %>
 
 development:
   <<: *default
-  database: trackcore_backend_development
+  database: trackcore_development
 
 test:
   <<: *default
-  database: trackcore_backend_test
+  database: trackcore_test
 
 production:
   <<: *default
-  database: trackcore_backend_production
-  username: <YOUR_PRODUCTION_USER>
-  password: <SOME_SECURE_VALUE>
+  database: trackcore_production
