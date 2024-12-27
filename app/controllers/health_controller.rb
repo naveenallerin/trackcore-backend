@@ -1,11 +1,10 @@
 class HealthController < ApplicationController
-  skip_before_action :verify_authenticity_token, if: -> { request.format.json? }
+  skip_before_action :verify_authenticity_token
 
   def show
-    render json: {
-      status: 'ok',
-      version: Rails.application.config.version,
-      timestamp: Time.current
-    }
+    health_status = HealthCheck.new.check
+    status = health_status[:status] == 'error' ? :service_unavailable : :ok
+
+    render json: health_status, status: status
   end
 end
