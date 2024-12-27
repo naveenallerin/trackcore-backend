@@ -1,41 +1,64 @@
-version: '3.9'
-
 services:
   db:
-    image: postgres:15
+    image: postgres:13
     container_name: trackcore_db
     environment:
-      POSTGRES_USER: trackcore
-      POSTGRES_PASSWORD: secret123
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: trackcore_development
     ports:
       - "5432:5432"
-    # For local dev, we mount a volume so data persists if container is restarted.
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
+    command: >
+      bash -c "rm -f tmp/pids/server.pid && 
+              mkdir -p tmp/pids &&
+              chmod -R 777 tmp log &&
+              bundle exec rails server -b '0.0.0.0' -P tmp/pids/server.pid"
     container_name: trackcore_app
-    # Depending on your approach, you might pass env vars either here or in an .env file
     environment:
-      # Rails expects database config to match:
-      DB_USER: trackcore
-      DB_PASSWORD: secret123
+      DB_USER: postgres
+      DB_PASSWORD: password
       DB_HOST: db
-      # Force rails to run dev mode in container:
       RAILS_ENV: development
+      REDIS_URL: redis://redis:6379/0
+      RAILS_LOG_TO_STDOUT: 'true'
+      BINDING: '0.0.0.0'
     ports:
       - "3000:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
-      # Mount local code inside container for live reloading in dev:
-      - .:/app
-    # If you want to run sidekiq or something else, override entrypoint or command here.
-    # For now we rely on Dockerfile's default CMD.
+      - .:/app:cached
+      - bundle_cache:/usr/local/bundle
+      - tmp_data:/app/tmp
+      - log_data:/app/log
 
 volumes:
-  postgres_data:
+  pgdata:
+  redis_data:
+  bundle_cache:
+  tmp_data:
+  log_data:
+
+networks:
+  default:
+    driver: bridge
