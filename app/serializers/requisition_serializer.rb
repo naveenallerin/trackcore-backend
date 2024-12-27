@@ -1,11 +1,18 @@
-class RequisitionSerializer < ActiveModel::Serializer
-  attributes :id, :title, :status, :created_at, :updated_at
+class RequisitionSerializer
+  include JSONAPI::Serializer
+
+  attributes :title, :description, :status, :created_at, :updated_at
   
   belongs_to :department
   has_many :requisition_fields
-  has_many :status_changes
-  
-  def requisition_fields
-    object.requisition_fields.active
+
+  attribute :custom_fields do |object|
+    object.requisition_fields.map do |field|
+      {
+        name: field.name,
+        field_type: field.field_type,
+        value: field.value
+      }
+    end
   end
 end

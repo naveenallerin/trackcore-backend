@@ -11,6 +11,8 @@ class Requisition < ApplicationRecord
   
   validates :title, presence: true
   validates :status, presence: true
+  validates :description, presence: true
+  validates :department, presence: true
   
   enum status: {
     draft: 0,
@@ -86,6 +88,17 @@ class Requisition < ApplicationRecord
     
     JobPostingWorker.perform_async(id)
     true
+  end
+  
+  def external_approval?
+    approval_service == 'external' && external_approval_id.present?
+  end
+  
+  def sync_approval_status!
+    return unless external_approval?
+    
+    status = ExternalApprovalService.check_status(external_approval_id)
+    update!(status: status) if status != self.status
   end
   
   private

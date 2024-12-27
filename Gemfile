@@ -15,7 +15,7 @@ gem 'jwt'
 
 # Background Processing
 gem 'redis'
-gem 'sidekiq'
+gem 'sidekiq', '~> 7.0'
 
 # Logging & Monitoring
 gem 'lograge'

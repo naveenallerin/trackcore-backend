@@ -1,5 +1,7 @@
 # config/routes.rb
 
+require 'sidekiq/web'
+
 Rails.application.routes.draw do
   resources :candidates, only: [:index, :show, :create, :update, :destroy]
 
@@ -44,7 +46,7 @@ Rails.application.routes.draw do
     end
   end
 
-  # Sidekiq Web UI
+  # Temporary direct mount without authentication
   mount Sidekiq::Web => '/sidekiq'
 
   # Monitoring endpoints

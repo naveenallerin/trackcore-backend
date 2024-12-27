@@ -19,20 +19,13 @@ module Api
       end
       
       def create
-        authorize Requisition
+        result = RequisitionService.create(requisition_params)
         
-        result = Requisitions::CreateService.new(
-          requisition_params.merge(created_by: Current.user),
-          Current.user
-        ).execute
-        
-        if result.success?
-          render json: result.data, status: :created
+        if result[:success]
+          render json: RequisitionSerializer.new(result[:requisition]), status: :created
         else
-          render json: { errors: result.errors }, status: :unprocessable_entity
+          render json: { errors: result[:errors] }, status: :unprocessable_entity
         end
-      rescue Pundit::NotAuthorizedError
-        render json: { error: 'Unauthorized' }, status: :forbidden
       end
       
       def submit
@@ -77,10 +70,10 @@ module Api
       
       def requisition_params
         params.require(:requisition).permit(
-          :title, 
-          :department_id, 
+          :title,
           :description,
-          custom_fields: [:key, :value, :type]
+          :department_id,
+          custom_fields: [:name, :field_type, :value]
         )
       end
       

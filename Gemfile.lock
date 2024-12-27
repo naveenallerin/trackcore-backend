@@ -305,7 +305,7 @@ DEPENDENCIES
   sentry-rails
   sentry-ruby
   shoulda-matchers (~> 5.0)
-  sidekiq
+  sidekiq (~> 7.0)
   spring
   webmock
 

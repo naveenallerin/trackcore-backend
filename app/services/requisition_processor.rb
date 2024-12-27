@@ -49,15 +49,49 @@ class RequisitionProcessor
   private
   
   def create_approval_request
-    approval_id = ApprovalService.request_approval(@requisition)
+    approval_id = if external_approval_enabled?
+      request_external_approval
+    else
+      create_internal_approval
+    end
     
     @requisition.update!(
       status: :pending_approval,
-      approval_request_id: approval_id
+      approval_request_id: approval_id,
+      approval_service: external_approval_enabled? ? 'external' : 'internal'
     )
   rescue => e
     Rails.logger.error "Failed to create approval request: #{e.message}"
+    EventPublisher.publish('approval.request.failed', {
+      requisition_id: @requisition.id,
+      error: e.message
+    })
     raise ActiveRecord::RecordInvalid
+  end
+
+  def external_approval_enabled?
+    Rails.configuration.x.approval_service.enabled
+  end
+
+  def request_external_approval
+    response = ExternalApprovalService.request_approval(@requisition)
+    EventPublisher.publish('external_approval.requested', 
+      requisition_id: @requisition.id,
+      external_id: response
+    )
+    response
+  end
+  
+  def create_internal_approval
+    approval = @requisition.create_approval_request!(
+      status: :pending,
+      department: @requisition.department
+    )
+    EventPublisher.publish('internal_approval.created', 
+      requisition_id: @requisition.id,
+      approval_id: approval.id
+    )
+    approval.id
   end
   
   def update_requisition_status
