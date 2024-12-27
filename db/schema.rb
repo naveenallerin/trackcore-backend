@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_12_27_161748) do
+ActiveRecord::Schema[7.0].define(version: 2024_12_27_165037) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -28,6 +28,11 @@ ActiveRecord::Schema[7.0].define(version: 2024_12_27_161748) do
     t.index ["email"], name: "index_candidates_on_email", unique: true
   end
 
+  create_table "dashboard_widgets", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "requisition_fields", force: :cascade do |t|
     t.string "name"
     t.string "field_type"
@@ -42,6 +47,11 @@ ActiveRecord::Schema[7.0].define(version: 2024_12_27_161748) do
   end
 
   create_table "requisition_types", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "user_dashboard_layouts", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

@@ -1,9 +1,11 @@
 class ApprovalService
   class ApprovalError < StandardError; end
 
-  def initialize(requisition, external_adapter = nil)
+  def initialize(requisition, options = {})
     @requisition = requisition
-    @external_adapter = external_adapter || ExternalApprovalAdapter.new
+    @external_service = options[:external_service]
+    @internal_service = options[:internal_service]
+    @external_adapter = options[:external_adapter] || ExternalApprovalAdapter.new
   end
 
   def request
@@ -28,9 +30,9 @@ class ApprovalService
     raise ApprovalError, "Failed to update status: #{e.message}"
   end
 
-  def request_approval
-    return request_external_approval if external_approval?
-    request_internal_approval
+  def request_approval(approver_type:)
+    return handle_internal_approval if approver_type == 'internal'
+    handle_external_approval
   end
 
   def check_status
@@ -97,6 +99,26 @@ class ApprovalService
     end
   end
 
+  def internal_approval(approver_type)
+    @requisition.approval_requests.create!(
+      approver_type: approver_type,
+      status: 'pending'
+    )
+  end
+
+  def external_approval(approver_type)
+    # Initialize external approval request
+    approval = @requisition.approval_requests.create!(
+      approver_type: approver_type,
+      status: 'pending'
+    )
+    
+    # Here you would integrate with external approval system
+    # Example: ExternalApprovalAPI.request_approval(approval)
+    
+    approval
+  end
+
   def check_external_status
     return unless @requisition.external_approval_id
     
@@ -130,5 +152,25 @@ class ApprovalService
     # This could be replaced with an API call or event emission
     requisition = approval_request.requisition
     requisition.update!(approved_at: Time.current) if approval_request.approved?
+  end
+
+  def handle_internal_approval
+    ActiveRecord::Base.transaction do
+      approval_request = @requisition.approval_requests.create!(
+        status: 'pending',
+        approver_type: 'internal',
+        metadata: { requested_at: Time.current }
+      )
+      notify_approvers(approval_request)
+      approval_request
+    end
+  end
+
+  def handle_external_approval
+    # ...existing external approval code...
+  end
+
+  def notify_approvers(approval_request)
+    # Add notification logic here
   end
 end

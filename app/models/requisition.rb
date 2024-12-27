@@ -119,10 +119,8 @@ class Requisition < ApplicationRecord
     update!(status: status) if status != self.status
   end
   
-  def request_approval
-    create_approval_request unless approval_request
-    update(status: :pending_approval)
-    # Trigger approval workflow
+  def request_approval(approver_type:)
+    ApprovalService.new(self).request_approval(approver_type)
   end
   
   def complete_approval(approved)

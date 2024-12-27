@@ -1,7 +1,7 @@
 module Api
   module V1
     class RequisitionsController < ApplicationController
-      before_action :set_requisition, only: [:show, :update, :destroy]
+      before_action :set_requisition, only: [:show, :update, :destroy, :request_approval, :approval_status, :approval_complete, :clone]
       
       def index
         @requisitions = Requisition.all
@@ -21,14 +21,28 @@ module Api
         end
       end
 
-      def approval_complete
-        @requisition = Requisition.find(params[:id])
-        approval_status = params[:status]
-        
-        ApprovalService.new(@requisition).update_status(approval_status)
-        
-        render json: { status: 'success', requisition: @requisition }
+      def request_approval
+        service = ApprovalService.new(@requisition)
+        approval = service.request_approval(approver_type: params[:approver_type])
+        render json: approval, status: :created
       rescue ApprovalService::ApprovalError => e
+        render json: { error: e.message }, status: :unprocessable_entity
+      end
+
+      def approval_status
+        render json: { status: @requisition.approval_status }
+      end
+
+      def approval_complete
+        approval = @requisition.approval_requests.find(params[:approval_id])
+        approval.update!(status: params[:status])
+        render json: { status: :ok }
+      end
+
+      def clone
+        cloned = RequisitionCloneService.new(@requisition).clone
+        render json: cloned, status: :created
+      rescue StandardError => e
         render json: { error: e.message }, status: :unprocessable_entity
       end
       
@@ -39,7 +53,10 @@ module Api
       end
       
       def requisition_params
-        params.require(:requisition).permit(:title, :description)
+        params.require(:requisition).permit(
+          :title, :department_id, :salary_range, :location,
+          :description, :status, requisition_fields_attributes: [:id, :field_name, :field_type, :field_value]
+        )
       end
     end
   end

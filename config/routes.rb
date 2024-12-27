@@ -33,6 +33,7 @@ Rails.application.routes.draw do
       resources :templates do
         member do
           post :preview
+          post :generate_draft
         end
         resources :versions, controller: 'template_versions', only: [:index, :show] do
           collection do
@@ -41,6 +42,13 @@ Rails.application.routes.draw do
           member do
             post :revert
           end
+        end
+      end
+
+      resources :dashboards, only: [] do
+        collection do
+          get :metrics
+          get :widgets
         end
       end
 
