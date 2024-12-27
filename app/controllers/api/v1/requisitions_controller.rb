@@ -1,17 +1,11 @@
 module Api
   module V1
     class RequisitionsController < ApplicationController
-      before_action :set_requisition, except: [:index, :create]
-      before_action :authorize_requisition
+      before_action :set_requisition, only: [:show, :update, :destroy]
       
       def index
-        @requisitions = Requisition.includes(:department, :requisition_fields)
-          .by_status(params[:status])
-          .by_department(params[:department_id])
-          .search(params[:query])
-          .page(params[:page])
-        
-        render json: @requisitions, each_serializer: RequisitionSerializer
+        @requisitions = Requisition.all
+        render json: @requisitions
       end
       
       def show
@@ -19,46 +13,22 @@ module Api
       end
       
       def create
-        result = RequisitionService.create(requisition_params)
-        
-        if result[:success]
-          render json: RequisitionSerializer.new(result[:requisition]), status: :created
+        @requisition = current_user.requisitions.build(requisition_params)
+        if @requisition.save
+          render json: @requisition, status: :created
         else
-          render json: { errors: result[:errors] }, status: :unprocessable_entity
+          render json: @requisition.errors, status: :unprocessable_entity
         end
       end
-      
-      def submit
-        processor = RequisitionProcessor.new(@requisition)
-        
-        if processor.submit_for_approval
-          render json: @requisition
-        else
-          render json: { error: 'Cannot submit requisition' }, status: :unprocessable_entity
-        end
-      end
-      
-      def update
-        authorize @requisition
-        
-        if @requisition.update(requisition_params)
-          render json: @requisition
-        else
-          render json: { errors: @requisition.errors }, status: :unprocessable_entity
-        end
-      end
-      
+
       def approval_complete
-        @requisition.with_lock do
-          if params[:approved]
-            @requisition.update!(status: :approved)
-          else
-            @requisition.update!(status: :rejected)
-          end
-        end
+        @requisition = Requisition.find(params[:id])
+        approval_status = params[:status]
         
-        head :ok
-      rescue => e
+        ApprovalService.new(@requisition).update_status(approval_status)
+        
+        render json: { status: 'success', requisition: @requisition }
+      rescue ApprovalService::ApprovalError => e
         render json: { error: e.message }, status: :unprocessable_entity
       end
       
@@ -69,18 +39,7 @@ module Api
       end
       
       def requisition_params
-        params.require(:requisition).permit(
-          :title,
-          :description,
-          :department_id,
-          custom_fields: [:name, :field_type, :value]
-        )
-      end
-      
-      def authorize_requisition
-        authorize @requisition if @requisition.present?
-      rescue Pundit::NotAuthorizedError
-        render json: { error: 'Unauthorized' }, status: :forbidden
+        params.require(:requisition).permit(:title, :description)
       end
     end
   end

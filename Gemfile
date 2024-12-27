@@ -12,6 +12,7 @@ gem 'bootsnap', require: false
 gem 'rack-cors'
 gem 'secure_headers'
 gem 'jwt'
+gem 'jsonapi-serializer'
 
 # Background Processing
 gem 'redis'
@@ -23,6 +24,9 @@ gem 'lograge-sql'
 gem 'prometheus-client'
 gem 'sentry-ruby'
 gem 'sentry-rails'
+
+# Authorization
+gem 'pundit'
 
 group :development, :test do
   gem 'rspec-rails'

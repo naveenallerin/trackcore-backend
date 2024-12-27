@@ -1,5 +1,7 @@
 # spec/rails_helper.rb
 
+require 'spec_helper'
+require 'pundit/rspec'
 ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'
 
@@ -21,16 +23,25 @@ RSpec.configure do |config|
   # Dir[Rails.root.join('spec', 'support', '**', '*.rb')].sort.each { |f| require f }
 
   # Where to look for fixture files (if using fixtures).
-  config.fixture_paths = [Rails.root.join('spec', 'fixtures')]
+  config.fixture_path = "#{::Rails.root}/spec/fixtures"
 
-  # Use transactional fixtures if you’re using ActiveRecord.
+  # Factory Bot configuration
+  config.include FactoryBot::Syntax::Methods
+
+  # Database cleaner configuration
   config.use_transactional_fixtures = true
 
   # You can configure RSpec to automatically tag specs by their directory.
   # e.g. spec/models => type: :model
   # Uncomment if desired:
-  # config.infer_spec_type_from_file_location!
+  config.infer_spec_type_from_file_location!
 
   # Filter out Rails gems from the backtrace in failures:
   config.filter_rails_from_backtrace!
+
+  # Clean up the database between tests
+  config.before(:suite) do
+    DatabaseCleaner.strategy = :transaction
+    DatabaseCleaner.clean_with(:truncation)
+  end
 end

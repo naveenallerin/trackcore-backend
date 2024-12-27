@@ -10,9 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_12_27_101500) do
+ActiveRecord::Schema[7.0].define(version: 2024_12_27_161748) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "approval_requests", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "candidates", force: :cascade do |t|
     t.string "first_name"
@@ -21,6 +26,24 @@ ActiveRecord::Schema[7.0].define(version: 2024_12_27_101500) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_candidates_on_email", unique: true
+  end
+
+  create_table "requisition_fields", force: :cascade do |t|
+    t.string "name"
+    t.string "field_type"
+    t.boolean "required", default: false
+    t.text "options"
+    t.integer "position"
+    t.boolean "active", default: true
+    t.bigint "requisition_type_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["requisition_type_id"], name: "index_requisition_fields_on_requisition_type_id"
+  end
+
+  create_table "requisition_types", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
 end

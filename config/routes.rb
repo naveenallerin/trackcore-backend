@@ -12,13 +12,18 @@ Rails.application.routes.draw do
         member do
           post :clone
           post :submit
+          post :request_approval
+          post :approval_complete
+          get :approval_status
           resources :comments, only: [:index, :create]
           resources :attachments, only: [:index, :create, :destroy]
         end
         resources :job_postings, only: [:index, :create, :destroy]
+        resources :requisition_fields, only: [:create, :update, :destroy]
+        resources :approval_requests, only: [:create]
       end
 
-      resources :approval_requests, only: [:show] do
+      resources :approval_requests, only: [:show, :update] do
         member do
           post :approve
           post :reject
@@ -43,6 +48,7 @@ Rails.application.routes.draw do
 
       get 'dashboard/metrics', to: 'dashboards#metrics'
       get 'dashboard/health', to: 'dashboards#health_status'
+
     end
   end
 
