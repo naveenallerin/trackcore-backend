@@ -30,7 +30,7 @@ jobs:
       JOB_POSTING_SERVICE_URL: http://job-posting-service:3000
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
