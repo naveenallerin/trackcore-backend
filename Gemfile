@@ -26,7 +26,7 @@ gem 'sentry-ruby'
 gem 'sentry-rails'
 
 # AI integration for learning suggestions
-gem 'ruby-openai', '~> 4.0'
+gem 'ruby-openai', '~> 7.3'
 
 # Authorization
 gem 'pundit', '~> 2.3'

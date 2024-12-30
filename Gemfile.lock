@@ -95,6 +95,7 @@ GEM
     date (3.4.1)
     diff-lcs (1.5.1)
     erubi (1.13.1)
+    event_stream_parser (1.0.0)
     factory_bot (6.5.0)
       activesupport (>= 5.0.0)
     factory_bot_rails (6.4.4)
@@ -258,7 +259,8 @@ GEM
       rack (>= 1.1)
       rubocop (>= 1.52.0, < 2.0)
       rubocop-ast (>= 1.31.1, < 2.0)
-    ruby-openai (4.3.2)
+    ruby-openai (7.3.1)
+      event_stream_parser (>= 0.3.0, < 2.0.0)
       faraday (>= 1)
       faraday-multipart (>= 1)
     ruby-progressbar (1.13.0)
@@ -322,7 +324,7 @@ DEPENDENCIES
   rspec-rails
   rubocop
   rubocop-rails
-  ruby-openai (~> 4.0)
+  ruby-openai (~> 7.3)
   secure_headers
   sentry-rails
   sentry-ruby
