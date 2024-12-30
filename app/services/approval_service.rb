@@ -1,6 +1,8 @@
 class ApprovalService
   class ApprovalError < StandardError; end
+  class Error < StandardError; end
 
+  
   def initialize(requisition, options = {})
     @requisition = requisition
     @external_service = options[:external_service]
@@ -69,6 +71,36 @@ class ApprovalService
         comments: comments
       )
     end
+  end
+
+  def self.initiate_approval(requisition)
+    # Add approval initiation logic
+    true
+  end
+
+  def self.create_approval_request(requisition)
+    ApprovalRequest.create!(requisition: requisition, status: 'pending')
+  end
+
+  def self.process_approval(approval_request, approved:)
+    approval_request.update!(status: approved ? 'approved' : 'rejected')
+  end
+
+  def request_approval(requisition)
+    # External approval service integration
+    response = HTTParty.post(ENV['APPROVAL_SERVICE_URL'], 
+      body: { requisition_id: requisition.id }.to_json,
+      headers: { 'Content-Type' => 'application/json' }
+    )
+    
+    raise Error, 'Failed to create approval request' unless response.success?
+    response.parsed_response['request_id']
+  end
+  
+  def check_status(request_id)
+    response = HTTParty.get("#{ENV['APPROVAL_SERVICE_URL']}/#{request_id}")
+    raise Error, 'Failed to check approval status' unless response.success?
+    response.parsed_response['status']
   end
 
   private

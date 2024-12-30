@@ -7,6 +7,24 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      resources :candidates do
+        collection do
+          post :bulk_update
+          post :merge
+        end
+        member do
+          post :knockout_check
+          patch :override_score
+          get :check_duplicates
+
+          patch :archive
+        end
+        resources :licenses, controller: 'candidate_licenses' do
+          member do
+            post :verify
+          end
+        end
+      end
       resources :candidates
       resources :requisitions do
         member do
@@ -17,6 +35,9 @@ Rails.application.routes.draw do
           get :approval_status
           resources :comments, only: [:index, :create]
           resources :attachments, only: [:index, :create, :destroy]
+        end
+        collection do
+          post :bulk_create
         end
         resources :job_postings, only: [:index, :create, :destroy]
         resources :requisition_fields, only: [:create, :update, :destroy]
@@ -33,6 +54,8 @@ Rails.application.routes.draw do
       resources :templates do
         member do
           post :preview
+          post :enhance
+          post :approve
           post :generate_draft
         end
         resources :versions, controller: 'template_versions', only: [:index, :show] do
@@ -45,17 +68,97 @@ Rails.application.routes.draw do
         end
       end
 
-      resources :dashboards, only: [] do
+      resources :dashboards, only: [:index] do
         collection do
           get :metrics
           get :widgets
+          get :drill_down
         end
+      end
+
+      resources :approvals, only: [] do
+        resources :steps, only: [], controller: 'approvals' do
+          member do
+            patch :approve, action: :approve_step
+            patch :reject, action: :reject_step
+          end
+        end
+      end
+
+      resources :job_postings, only: [:create, :destroy]
+
+      resources :rules
+
+      resource :dashboard, only: [:show] do
+        get :drill_down, on: :member
+        resources :widgets, only: [:index, :create, :destroy] do
+          collection do
+            put :reorder
+          end
+        end
+      end
+
+      resource :dashboard_layout, only: [:show, :update]
+
+      resources :widgets, only: [] do
+        collection do
+          get :available
+          get :categories
+        end
+      end
+
+      namespace :admin do
+        resources :widget_definitions, except: [:show]
+        resources :widgets, except: [:index, :show]
+      end
+
+      namespace :webhooks do
+        post 'sms/inbound', to: 'sms#inbound'
       end
 
       post 'webhooks/:provider', to: 'webhooks#job_board_update'
 
       get 'dashboard/metrics', to: 'dashboards#metrics'
       get 'dashboard/health', to: 'dashboards#health_status'
+
+      namespace :candidate_portal do
+        post 'login', to: 'auth#create'
+        resource :profile, only: [:show, :update] do
+          post :upload_resume
+        end
+        resources :documents, only: [:index, :show, :update]
+        resources :job_recommendations, only: [:index]
+      end
+
+      resources :interviews do
+        member do
+          get :recording
+          get :transcript
+        end
+      end
+
+      namespace :preboarding do
+        resources :contents do
+          member do
+            post :progress
+          end
+        end
+
+        resources :quizzes do
+          member do
+            post :attempt
+          end
+        end
+
+        get 'dashboard', to: 'analytics#dashboard'
+      end
+
+      resources :trend_analysis, only: [] do
+        collection do
+          get :historical_metrics
+          get :forecast
+        end
+      end
 
     end
   end
@@ -68,6 +171,4 @@ Rails.application.routes.draw do
 
   # Health check endpoint
   get '/health', to: 'health#show'
-
-  # root "posts#index"  # optional
 end

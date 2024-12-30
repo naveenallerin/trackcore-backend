@@ -1,47 +1,44 @@
-# spec/rails_helper.rb
-
 require 'spec_helper'
-require 'pundit/rspec'
 ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'
-
 abort("The Rails environment is running in production mode!") if Rails.env.production?
-
 require 'rspec/rails'
+require 'webmock/rspec'
 
-# If you’re using ActiveRecord, this ensures all migrations are up-to-date:
+# Prevent real HTTP requests in tests
+WebMock.disable_net_connect!(allow_localhost: true)
+
+# Load support files
+Dir[Rails.root.join('spec/support/**/*.rb')].sort.each { |f| require f }
+
 begin
   ActiveRecord::Migration.maintain_test_schema!
-rescue ActiveRecord::PendingMigrationError => err
-  abort err.to_s.strip
+rescue ActiveRecord::PendingMigrationError => e
+  abort e.to_s.strip
 end
 
 RSpec.configure do |config|
-  # If you want to load custom support files (e.g. in spec/support/**),
-  # you can uncomment/modify the line below:
-  #
-  # Dir[Rails.root.join('spec', 'support', '**', '*.rb')].sort.each { |f| require f }
-
-  # Where to look for fixture files (if using fixtures).
-  config.fixture_path = "#{::Rails.root}/spec/fixtures"
-
-  # Factory Bot configuration
-  config.include FactoryBot::Syntax::Methods
-
-  # Database cleaner configuration
+  config.fixture_path = Rails.root.join('spec/fixtures')
   config.use_transactional_fixtures = true
+  config.include FactoryBot::Syntax::Methods
+  config.include ActionDispatch::TestProcess
 
-  # You can configure RSpec to automatically tag specs by their directory.
-  # e.g. spec/models => type: :model
-  # Uncomment if desired:
-  config.infer_spec_type_from_file_location!
-
-  # Filter out Rails gems from the backtrace in failures:
-  config.filter_rails_from_backtrace!
-
-  # Clean up the database between tests
   config.before(:suite) do
-    DatabaseCleaner.strategy = :transaction
     DatabaseCleaner.clean_with(:truncation)
+    DatabaseCleaner.strategy = :transaction
   end
+
+  config.around(:each) do |example|
+    DatabaseCleaner.cleaning do
+      example.run
+    end
+  end
+
+  config.include ServiceMockHelpers, type: :request
+
+  config.after(:each) do
+    WebMock.reset!
+  end
+
+  config.filter_rails_from_backtrace!
 end

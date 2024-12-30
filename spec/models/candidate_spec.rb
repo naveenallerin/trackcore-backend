@@ -1,5 +1,6 @@
 # spec/models/candidate_spec.rb
 require 'rails_helper'
+require 'support/auth_helpers'
 
 RSpec.describe Candidate, type: :model do
   describe 'validations' do
@@ -72,5 +73,15 @@ RSpec.describe Candidate, type: :model do
 
       expect(candidate.full_name).to eq('Jane Doe')
     end
+  end
+end
+
+# spec/support/auth_helpers.rb
+module AuthHelpers
+  def generate_candidate_token(candidate)
+    Candidates::AuthService.new(
+      email: candidate.email,
+      password: candidate.password
+    ).authenticate
   end
 end

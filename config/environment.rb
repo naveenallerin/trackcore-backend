@@ -22,4 +22,6 @@ Bundler.require(*Rails.groups)
 require_relative 'application'
 
 # Initialize the Rails application.
-Rails.application.initialize!
+unless Rails.application.initialized?
+  Rails.application.initialize!
+end

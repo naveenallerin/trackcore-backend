@@ -25,13 +25,14 @@ gem 'prometheus-client'
 gem 'sentry-ruby'
 gem 'sentry-rails'
 
+# AI integration for learning suggestions
+gem 'ruby-openai', '~> 4.0'
+
 # Authorization
-gem 'pundit'
+gem 'pundit', '~> 2.3'
 
 group :development, :test do
-  gem 'rspec-rails'
-  gem 'factory_bot_rails'
-  gem 'faker'
+  gem 'webmock'
   gem 'shoulda-matchers',  '~> 5.0'
 
   gem 'rubocop',           require: false
@@ -47,6 +48,8 @@ group :development do
 end
 
 group :test do
+  gem 'rspec-rails'
+  gem 'factory_bot_rails'
+  gem 'faker'
   gem 'database_cleaner-active_record'
-  gem 'webmock'
 end

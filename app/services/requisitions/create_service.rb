@@ -5,10 +5,20 @@ module Requisitions
     end
 
     def call
-      ActiveRecord::Base.transaction do
-        requisition = Requisition.create!(requisition_params)
-        create_custom_fields(requisition)
-        requisition
+      @requisition = Requisition.new(requisition_params)
+      
+      if @requisition.save
+        TrackcoreCommon::EventPublisher.publish(
+          'requisition_created',
+          {
+            requisition_id: @requisition.id,
+            created_at: @requisition.created_at,
+            department: @requisition.department
+          }
+        )
+        Success.new(@requisition)
+      else
+        Failure.new(@requisition.errors)
       end
     end
 

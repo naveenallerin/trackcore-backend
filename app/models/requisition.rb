@@ -1,6 +1,7 @@
 class Requisition < ApplicationRecord
   belongs_to :department
   belongs_to :user
+  belongs_to :template, optional: true
   has_many :requisition_fields, dependent: :destroy
   has_one :approval_request, dependent: :destroy
   has_many :status_changes, class_name: 'RequisitionStatusChange', dependent: :destroy
@@ -15,6 +16,7 @@ class Requisition < ApplicationRecord
   validates :status, presence: true, inclusion: { in: %w[pending approved rejected] }
   validates :description, presence: true
   validates :department, presence: true
+  validates :approval_state, inclusion: { in: %w[pending approved rejected] }
 
   # Add JSON columns for flexible storage
   serialize :metadata, JSON
@@ -34,18 +36,31 @@ class Requisition < ApplicationRecord
   scope :approved, -> { joins(:approval_request).where(approval_requests: { status: 'approved' }) }
   scope :for_department, ->(department_id) { where(department_id: department_id) }
   scope :for_user, ->(user) {
-    if user.admin?
+    case user.role
+    when 'Admin'
       all
+    when 'Manager'
+      where(department: user.department)
+    when 'Recruiter'
+      where(user_id: user.id)
     else
-      where(department_id: user.department_id)
+      none
     end
   }
   scope :pending, -> { where(status: 'pending') }
   scope :rejected, -> { where(status: 'rejected') }
+  scope :active, -> { where(status: 'active') }
+  scope :pending_approval, -> { where(status: 'pending_approval') }
+  scope :for_department, ->(department) { where(department: department) }
+  scope :approved_in_month, ->(month) { where(status: 'approved').where('EXTRACT(MONTH FROM approved_at) = ?', month) }
   
   before_update :track_status_change, if: :status_changed?
   after_touch :clear_cached_status
   after_update :publish_status_change_event, if: :saved_change_to_status?
+  after_update :schedule_job_board_posts, if: :should_auto_post?
+  after_commit :invalidate_dashboard_cache
+
+  DEFAULT_BOARDS = %w[indeed linkedin glassdoor].freeze
   
   def self.search(query)
     where("title ILIKE ?", "%#{query}%") if query.present?
@@ -139,6 +154,30 @@ class Requisition < ApplicationRecord
 
   accepts_nested_attributes_for :requisition_fields, allow_destroy: true
 
+  def notify_status_change
+    # Implement notification logic
+  end
+
+  def self.new_applications_count
+    joins(:applications).where(applications: { status: 'new' }).distinct.count
+  end
+
+  def self.pending_interviews_count
+    joins(:applications).where(applications: { status: 'interview_scheduled' }).distinct.count
+  end
+
+  def self.total_applicants_count
+    joins(:applications).distinct.count
+  end
+
+  def self.offers_made_count
+    joins(:applications).where(applications: { status: 'offer_sent' }).distinct.count
+  end
+
+  def self.offers_accepted_count
+    joins(:applications).where(applications: { status: 'offer_accepted' }).distinct.count
+  end
+
   private
   
   def track_status_change
@@ -164,5 +203,18 @@ class Requisition < ApplicationRecord
         changed_by: Current.user&.id
       }
     )
+  end
+
+  def should_auto_post?
+    saved_change_to_status? && status == 'approved' && 
+      approval_request&.approved?
+  end
+
+  def schedule_job_board_posts
+    PostRequisitionJob.perform_async(id, DEFAULT_BOARDS)
+  end
+
+  def invalidate_dashboard_cache
+    Rails.cache.delete_matched("dashboard*")
   end
 end
