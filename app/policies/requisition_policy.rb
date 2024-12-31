@@ -1,18 +1,23 @@
+
 class RequisitionPolicy < ApplicationPolicy
   def index?
     true
   end
 
+  def show?
+    user.admin? || user.recruiter? || record.user_id == user.id
+  end
+
   def create?
-    user.present?
+    user.recruiter? || user.admin?
   end
 
   def update?
-    user.present? && (record.user_id == user.id || user.admin?)
+    user.admin? || record.user_id == user.id
   end
 
   def destroy?
-    update?
+    user.admin?
   end
 
   class Scope < Scope

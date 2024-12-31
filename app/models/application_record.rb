@@ -10,6 +10,10 @@ class ApplicationRecord < ActiveRecord::Base
   # Add default ordering by created_at
   default_scope { order(created_at: :desc) }
 
+  # Add default audit configuration
+  after_create :log_create_action
+  after_update :log_update_action
+  after_destroy :log_destroy_action
   
   # Common timestamp helpers
   def created_ago
@@ -51,5 +55,24 @@ class ApplicationRecord < ActiveRecord::Base
   def log_error(message, error)
     Rails.logger.error("#{self.class.name} Error: #{message} - #{error.message}")
     Rails.logger.debug(error.backtrace.join("\n")) if Rails.env.development?
+  end
+
+  def log_create_action
+    log_audit_action('create')
+  end
+
+  def log_update_action
+    log_audit_action('update')
+  end
+
+  def log_destroy_action
+    log_audit_action('destroy')
+  end
+
+  def log_audit_action(action)
+    return unless defined?(paper_trail)
+    
+    user_id = Current.user&.id
+    PaperTrail.request.whodunnit = user_id if user_id
   end
 end

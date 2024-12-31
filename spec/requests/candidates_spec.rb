@@ -3,6 +3,42 @@
 require 'rails_helper'
 
 RSpec.describe 'Candidates API', type: :request do
+  let(:job) { create(:job) }
+  
+  describe 'GET /api/v1/candidates' do
+    it 'returns a list of candidates' do
+      create_list(:candidate, 3, job: job)
+      
+      get '/api/v1/candidates', headers: json_headers
+      
+      expect(response).to have_http_status(:ok)
+      expect(json_response.size).to eq(3)
+    end
+  end
+
+  describe 'POST /api/v1/candidates' do
+    let(:valid_attributes) do
+      {
+        candidate: {
+          job_id: job.id,
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'john@example.com',
+          status: 'new'
+        }
+      }
+    end
+
+    it 'creates a new candidate' do
+      post '/api/v1/candidates', 
+           headers: json_headers,
+           params: valid_attributes.to_json
+
+      expect(response).to have_http_status(:created)
+      expect(json_response['email']).to eq('john@example.com')
+    end
+  end
+
   describe 'GET /candidates' do
     it 'returns an empty array when no candidates exist' do
       get '/candidates'

@@ -1,72 +1,32 @@
 class User < ApplicationRecord
-  has_many :requisitions
+  has_secure_password
+
+  validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :password, length: { minimum: 6 }, if: -> { new_record? || !password.nil? }
+
+  has_many :notes
   
-  VALID_ROLES = %w[Recruiter Manager Admin Approver].freeze
-  
-  validates :email, presence: true, uniqueness: true
-  validates :dashboard_config, presence: true
-  validates_inclusion_of :dashboard_config, in: ->(user) { [{}] }, 
-    if: -> { dashboard_config.blank? },
-    message: "can't be blank"
-  validates :role, presence: true, inclusion: { in: VALID_ROLES }
-  validates :department, presence: true, if: -> { role == 'Manager' }
-  
-  has_one :dashboard_layout, class_name: 'UserDashboardLayout'
-  after_create :create_default_dashboard_layout
+  enum role: {
+    basic: 0,
+    recruiter: 1,
+    hiring_manager: 2,
+    admin: 3
+  }
 
-  scope :recruiters, -> { where(role: 'Recruiter') }
-  scope :managers, -> { where(role: 'Manager') }
-  scope :by_department, ->(dept) { where(department: dept) }
+  # Default role on creation
+  after_initialize :set_default_role, if: :new_record?
 
-  def approver?
-    role == 'approver'
-  end
-  
-  def add_widget(widget_key)
-    widgets = dashboard_config["widgets"] || []
-    return false if widgets.include?(widget_key)
-    
-    self.dashboard_config = dashboard_config.merge("widgets" => widgets + [widget_key])
-    save
-  end
-  
-  def remove_widget(widget_key)
-    widgets = dashboard_config["widgets"] || []
-    return false unless widgets.include?(widget_key)
-    
-    self.dashboard_config = dashboard_config.merge("widgets" => widgets - [widget_key])
-    save
-  end
-
-  def available_widgets
-    Widget.available_for_role(role)
-  end
-
-  def can_access_dashboard?
-    VALID_ROLES.include?(role)
-  end
-
-  def can_view_requisition?(requisition)
-    case role
-    when 'Admin'
-      true
-    when 'Manager'
-      requisition.department == department
-    when 'Recruiter'
-      requisition.user_id == id
-    else
-      false
-    end
-  end
-
-  def can_view_candidate?(candidate)
-    can_view_requisition?(candidate.requisition)
+  def generate_jwt
+    payload = {
+      user_id: id,
+      exp: 2.weeks.from_now.to_i
+    }
+    JWT.encode(payload, Rails.application.credentials.secret_key_base)
   end
 
   private
 
-  def create_default_dashboard_layout
-    default_widgets = Widget.available_for_role(role).keys.first(3)
-    create_dashboard_layout(layout: { 'widgets' => default_widgets })
+  def set_default_role
+    self.role ||= :basic
   end
 end

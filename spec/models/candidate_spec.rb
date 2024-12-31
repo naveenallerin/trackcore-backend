@@ -63,6 +63,29 @@ RSpec.describe Candidate, type: :model do
     end
   end
 
+  describe 'search' do
+    let!(:john_doe) { create(:candidate, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
+    let!(:jane_doe) { create(:candidate, first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com') }
+    let!(:jim_smith) { create(:candidate, first_name: 'Jim', last_name: 'Smith', email: 'jim@example.com') }
+
+    it 'finds matches by first name' do
+      results = Candidate.search_everything('John')
+      expect(results).to include(john_doe)
+      expect(results).not_to include(jane_doe)
+    end
+
+    it 'finds partial matches' do
+      results = Candidate.search_everything('jo')
+      expect(results).to include(john_doe)
+    end
+
+    it 'finds matches across multiple fields' do
+      results = Candidate.search_everything('doe')
+      expect(results).to include(john_doe, jane_doe)
+      expect(results).not_to include(jim_smith)
+    end
+  end
+
   describe '#full_name' do
     it 'returns the concatenation of first_name and last_name' do
       candidate = Candidate.new(

@@ -2,13 +2,13 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: localhost
-  username: <%= ENV['POSTGRES_USER'] || 'postgres' %>
-  password: <%= ENV['POSTGRES_PASSWORD'] || 'password' %>
+  url: <%= ENV['DATABASE_URL'] %>
+  schema_search_path: public
+  extensions:
+    - pg_trgm
 
 development:
   <<: *default
-  database: trackcore_development
 
 test:
   <<: *default
@@ -16,4 +16,8 @@ test:
 
 production:
   <<: *default
-  database: trackcore_production
+  database: <%= ENV['DB_NAME'] %>
+  username: <%= ENV['DB_USER'] %>
+  password: <%= ENV['DB_PASSWORD'] %>
+  host: <%= ENV['DB_HOST'] %>
+  port: <%= ENV['DB_PORT'] || 5432 %>

@@ -1,55 +1,70 @@
-# Gemfile
 source 'https://rubygems.org'
+git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+
 ruby '3.2.2'
 
-# Core Rails
-gem 'rails', '~> 7.0.8'
-gem 'pg'
-gem 'puma'
-gem 'bootsnap', require: false
+# Core
+gem 'rails', '~> 7.0.0'
+gem 'pg', '~> 1.1'
+gem 'puma', '~> 5.0'
 
-# API & Security
+# Auth & Authorization
+gem 'devise', '~> 4.9.2'
+gem 'devise-jwt'
+gem 'pundit'
+gem 'jwt', '~> 2.7'
+gem 'bcrypt', '~> 3.1.7'
+
+# API & Serialization
 gem 'rack-cors'
-gem 'secure_headers'
-gem 'jwt'
+gem 'graphql'
 gem 'jsonapi-serializer'
+gem 'active_model_serializers'
+gem 'pagy', '~> 9.3.3'
+gem 'pg_search', '~> 2.3'
 
 # Background Processing
+gem 'sidekiq'
 gem 'redis'
-gem 'sidekiq', '~> 7.0'
 
-# Logging & Monitoring
+# File Storage
+gem 'aws-sdk-s3', '~> 1.86'
+
+# Monitoring & Logging
+gem 'elasticsearch'
 gem 'lograge'
-gem 'lograge-sql'
-gem 'prometheus-client'
+
+# Monitoring and Error Tracking
 gem 'sentry-ruby'
 gem 'sentry-rails'
+gem 'ddtrace'  # Datadog APM
+gem 'lograge'  # Structured logging
+gem 'oj'       # Fast JSON parsing for lograge
 
-# AI integration for learning suggestions
-gem 'ruby-openai', '~> 4.0'
+# Security
+gem 'secure_headers'
 
-# Authorization
-gem 'pundit', '~> 2.3'
+# Security & Encryption
+gem 'lockbox'
+gem 'blind_index'
+gem 'rack-attack'
+
+# Auditing & Security
+gem 'paper_trail', '~> 12.0'
+gem 'brakeman'
+gem 'bundler-audit'
+gem 'ruby_audit'
 
 group :development, :test do
-  gem 'webmock'
-  gem 'shoulda-matchers',  '~> 5.0'
-
-  gem 'rubocop',           require: false
-  gem 'rubocop-rails',     require: false
-  gem 'brakeman'
-  gem 'bundler-audit'
-end
-
-group :development do
-  gem 'listen'
-  gem 'spring'
-  gem 'bullet'
-end
-
-group :test do
   gem 'rspec-rails'
   gem 'factory_bot_rails'
   gem 'faker'
+  gem 'pry-byebug'
+  gem 'shoulda-matchers', '~> 5.0'
   gem 'database_cleaner-active_record'
+  gem 'database_cleaner'
+  gem 'simplecov', require: false
+  gem 'rubocop', require: false
+  gem 'rubocop-rails', require: false
+  gem 'rubocop-rspec', require: false
 end

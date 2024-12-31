@@ -11,6 +11,10 @@ class Requisition < ApplicationRecord
   has_many :approvers, through: :approval_steps
   has_many :job_postings, dependent: :destroy
   has_many :approval_requests, dependent: :destroy
+  has_many :candidates
+  has_many :workflow_steps
+  has_many :applications
+  has_many :candidates, through: :applications
 
   validates :title, presence: true
   validates :status, presence: true, inclusion: { in: %w[pending approved rejected] }
@@ -26,8 +30,10 @@ class Requisition < ApplicationRecord
     draft: 0,
     pending_approval: 1,
     approved: 2,
-    rejected: 3,
-    closed: 4
+    published: 3,
+    closed: 4,
+    cancelled: 5,
+    open: 1
   }
   
   scope :by_status, ->(status) { where(status: status) if status.present? }
@@ -49,7 +55,7 @@ class Requisition < ApplicationRecord
   }
   scope :pending, -> { where(status: 'pending') }
   scope :rejected, -> { where(status: 'rejected') }
-  scope :active, -> { where(status: 'active') }
+  scope :active, -> { where(status: [:pending_approval, :approved, :published]) }
   scope :pending_approval, -> { where(status: 'pending_approval') }
   scope :for_department, ->(department) { where(department: department) }
   scope :approved_in_month, ->(month) { where(status: 'approved').where('EXTRACT(MONTH FROM approved_at) = ?', month) }
@@ -178,6 +184,14 @@ class Requisition < ApplicationRecord
     joins(:applications).where(applications: { status: 'offer_accepted' }).distinct.count
   end
 
+  def pending_approvals
+    approval_steps.pending
+  end
+
+  def publish!
+    update!(status: :published) if approved?
+  end
+
   private
   
   def track_status_change
@@ -216,5 +230,11 @@ class Requisition < ApplicationRecord
 
   def invalidate_dashboard_cache
     Rails.cache.delete_matched("dashboard*")
+  end
+
+  after_initialize :set_default_status, if: :new_record?
+
+  def set_default_status
+    self.status ||= :draft
   end
 end

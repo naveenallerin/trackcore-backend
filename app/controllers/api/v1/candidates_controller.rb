@@ -4,7 +4,7 @@ module Api
       before_action :set_candidate, only: [:show, :update, :destroy]
 
       def index
-        candidates = Candidate.all
+        candidates = Candidate.filter(filter_params)
         render json: candidates
       end
 
@@ -94,6 +94,21 @@ module Api
         end
       end
 
+      def upload_resume
+        candidate = Candidate.find(params[:id])
+        
+        if params[:resume].blank?
+          render json: { error: 'Resume file is required' }, status: :unprocessable_entity
+          return
+        end
+
+        if candidate.resume.attach(params[:resume])
+          render json: candidate, status: :ok
+        else
+          render json: { error: 'Failed to upload resume' }, status: :unprocessable_entity
+        end
+      end
+
       private
 
       def set_candidate
@@ -106,6 +121,10 @@ module Api
 
       def override_params
         params.require(:candidate).permit(:overridden_score, :override_reason)
+      end
+
+      def filter_params
+        params.permit(:query, :status, :location, :min_experience, :name, :start_date, :end_date)
       end
     end
   end

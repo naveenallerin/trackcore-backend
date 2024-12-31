@@ -3,10 +3,16 @@
 require 'sidekiq/web'
 
 Rails.application.routes.draw do
+  # Remove devise_for :users line
+  
+  post '/login', to: 'auth#login'
+  post '/signup', to: 'auth#signup'
+  
   resources :candidates, only: [:index, :show, :create, :update, :destroy]
 
   namespace :api do
     namespace :v1 do
+      get 'dashboard', to: 'dashboard#index'
       resources :candidates do
         collection do
           post :bulk_update
@@ -18,6 +24,7 @@ Rails.application.routes.draw do
           get :check_duplicates
 
           patch :archive
+          post :upload_resume
         end
         resources :licenses, controller: 'candidate_licenses' do
           member do
@@ -25,7 +32,10 @@ Rails.application.routes.draw do
           end
         end
       end
-      resources :candidates
+      resources :candidates do
+        resources :notes, only: [:index, :create, :update, :destroy]
+        resources :interviews, only: [:index, :create]
+      end
       resources :requisitions do
         member do
           post :clone
@@ -133,6 +143,7 @@ Rails.application.routes.draw do
       resources :interviews do
         member do
           get :recording
+
           get :transcript
         end
       end
@@ -160,6 +171,12 @@ Rails.application.routes.draw do
         end
       end
 
+      resources :notifications, only: [:index, :update] do
+        collection do
+          post :mark_all_read
+        end
+      end
+
     end
   end
 
@@ -171,4 +188,9 @@ Rails.application.routes.draw do
 
   # Health check endpoint
   get '/health', to: 'health#show'
+
+  resources :candidates do
+    resources :interviews, only: [:index, :create]
+  end
+  resources :interviews, only: [:show, :update, :destroy]
 end
