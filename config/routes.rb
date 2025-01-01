@@ -218,6 +218,15 @@ Rails.application.routes.draw do
           end
         end
 
+        resources :candidate_licenses do
+          member do
+            post :verify
+          end
+          collection do
+            get :expiring
+          end
+        end
+
       end
     end
 

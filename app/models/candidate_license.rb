@@ -6,11 +6,20 @@ class CandidateLicense < ApplicationRecord
   validates :license_type_id, presence: true
   validates :license_number, presence: true
   validates :issue_date, presence: true
-  validates :status, inclusion: { in: %w[active expired revoked] }
+  validates :status, presence: true
+  validates :expiration_date, presence: true
 
-  scope :expiring_soon, ->(days = 30) {
+  enum status: {
+    active: 'active',
+    expired: 'expired',
+    pending: 'pending',
+    revoked: 'revoked'
+  }
+
+  scope :expiring_soon, -> { 
     where(status: 'active')
-      .where('expiration_date BETWEEN ? AND ?', Date.current, days.days.from_now)
+    .where('expiration_date <= ?', 90.days.from_now)
+    .order(expiration_date: :asc) 
   }
 
   scope :expired_not_updated, -> {
