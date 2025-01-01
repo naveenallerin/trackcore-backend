@@ -12,7 +12,7 @@ class Offer < ApplicationRecord
   validate :start_date_after_today
   validates :title, presence: true
   validates :salary, presence: true, numericality: { greater_than: 0 }
-  validates :status, presence: true, inclusion: { in: %w[pending accepted rejected] }
+  validates :status, presence: true, inclusion: { in: %w[pending accepted rejected withdrawn] }
 
   enum status: {
     draft: 0,
@@ -33,6 +33,7 @@ class Offer < ApplicationRecord
     where(status: :accepted)
     .where('accepted_at >= ?', Time.current.beginning_of_month) 
   }
+  scope :accepted, -> { where(status: 'accepted') }
 
   before_save :calculate_total_compensation
   after_create :notify_approvers

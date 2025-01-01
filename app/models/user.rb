@@ -6,8 +6,10 @@ class User < ApplicationRecord
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :password, length: { minimum: 6 }, if: -> { new_record? || !password.nil? }
+  validates :role, presence: true
 
   has_many :notes
+  belongs_to :department
   
   enum role: {
     basic: 0,
@@ -26,6 +28,8 @@ class User < ApplicationRecord
     }
     JWT.encode(payload, Rails.application.credentials.secret_key_base)
   end
+
+  scope :with_role, ->(role) { where(role: roles[role]) }
 
   private
 

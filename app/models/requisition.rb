@@ -20,7 +20,7 @@ class Requisition < ApplicationRecord
   has_paper_trail
 
   validates :title, presence: true
-  validates :status, presence: true, inclusion: { in: %w[pending approved rejected] }
+  validates :status, presence: true, inclusion: { in: %w[pending approved rejected draft open filled closed] }
   validates :description, presence: true
   validates :department, presence: true
   validates :approval_state, inclusion: { in: %w[pending approved rejected] }
@@ -32,6 +32,7 @@ class Requisition < ApplicationRecord
   validates :salary, numericality: { greater_than: 0 }
   validate :validate_status_transition
   validate :validate_cfo_approval, if: :requires_cfo_approval?
+  validates :hiring_cost, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
 
   # Add JSON columns for flexible storage
   serialize :metadata, JSON
@@ -45,7 +46,8 @@ class Requisition < ApplicationRecord
     closed: 4,
     cancelled: 5,
     open: 1,
-    submitted: 1
+    submitted: 1,
+    filled: 6
   }
   
   scope :by_status, ->(status) { where(status: status) if status.present? }
@@ -72,6 +74,8 @@ class Requisition < ApplicationRecord
   scope :for_department, ->(department) { where(department: department) }
   scope :approved_in_month, ->(month) { where(status: 'approved').where('EXTRACT(MONTH FROM approved_at) = ?', month) }
   scope :needs_cfo, -> { where("salary > ?", 150000) }
+  scope :open, -> { where(status: 'open') }
+  scope :filled, -> { where(status: 'filled').where.not(filled_at: nil) }
   
   before_update :track_status_change, if: :status_changed?
   after_touch :clear_cached_status

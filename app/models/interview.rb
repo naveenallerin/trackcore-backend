@@ -42,6 +42,12 @@ class Interview < ApplicationRecord
   scope :past, -> { where('scheduled_at < ?', Time.current).order(scheduled_at: :desc) }
   scope :for_interviewer, ->(user_id) { where(interviewer_id: user_id) }
   scope :needs_feedback, -> { completed.where(feedback: nil) }
+  scope :scheduled_this_week, -> { 
+    where(scheduled_at: Time.current.beginning_of_week..Time.current.end_of_week) 
+  }
+  scope :for_department, ->(department) {
+    joins(:requisition).where(requisitions: { department_id: department.id })
+  }
 
   after_create :schedule_calendar_sync
 
