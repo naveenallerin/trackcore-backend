@@ -5,7 +5,9 @@ class DashboardController < ApplicationController
 
   def index
     dashboard_data = Rails.cache.fetch("dashboard_widgets_#{current_user.id}", expires_in: 1.hour) do
-      DashboardService.widgets_for(current_user)
+      data = DashboardService.widgets_for(current_user)
+      data.merge(ai_insights: fetch_ai_insights) if show_ai_insights?
+      data
     end
 
     render json: dashboard_data
@@ -28,5 +30,18 @@ class DashboardController < ApplicationController
       message: "No dashboard configuration found for your role",
       widgets: []
     }, status: :unprocessable_entity
+  end
+
+  def fetch_ai_insights
+    Rails.cache.fetch("ai_insights_#{current_user.id}", expires_in: 15.minutes) do
+      AiDashboardInsightService.generate_for(current_user)
+    end
+  rescue StandardError => e
+    Rails.logger.error("AI Insights Error: #{e.message}")
+    { error: "AI insights temporarily unavailable" }
+  end
+
+  def show_ai_insights?
+    current_user.recruiter? && Rails.application.credentials.dig(:ai, :api_key).present?
   end
 end
