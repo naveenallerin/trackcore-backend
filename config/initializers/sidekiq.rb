@@ -5,5 +5,10 @@ Sidekiq.configure_server do |config|
       cron: '0 0 * * *',  # Run at midnight daily
       class: 'JobBoardDistributionJob'
     )
+    Sidekiq::Cron::Job.create(
+      name: 'Approval Escalation Check',
+      cron: '*/30 * * * *', # Every 30 minutes
+      class: 'ApprovalEscalationJob'
+    )
   end
 end

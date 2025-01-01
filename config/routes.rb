@@ -52,6 +52,7 @@ Rails.application.routes.draw do
             resources :attachments, only: [:index, :create, :destroy]
             post :post_to_boards
             post :ai_generate_description
+            post :initiate_approval_flow
           end
           collection do
             post :bulk_create
@@ -65,6 +66,7 @@ Rails.application.routes.draw do
           member do
             post :approve
             post :reject
+            post :respond
           end
         end
 

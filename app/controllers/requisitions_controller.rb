@@ -1,5 +1,5 @@
 class RequisitionsController < ApplicationController
-  before_action :set_requisition, only: [:show, :update, :destroy, :clone, :post_to_boards, :ai_generate_description]
+  before_action :set_requisition, only: [:show, :update, :destroy, :clone, :post_to_boards, :ai_generate_description, :initiate_approval_flow]
   after_action :verify_authorized, except: [:index]
 
   def index
@@ -121,6 +121,25 @@ class RequisitionsController < ApplicationController
     render json: { error: e.message }, status: :service_unavailable
   end
 
+  def initiate_approval_flow
+    @requisition = Requisition.find(params[:id])
+    authorize @requisition, :initiate_approval?
+
+    if @requisition.approval_requests.any?
+      render_error("Approval flow already initiated", :unprocessable_entity)
+      return
+    end
+
+    begin
+      approval_requests = AdaptiveApprovalService.create_approval_requests_for(@requisition)
+      @requisition.update!(status: 'pending_approval')
+      
+      render json: approval_requests, status: :created
+    rescue ArgumentError => e
+      render_error(e.message, :unprocessable_entity)
+    end
+  end
+
   private
 
   def set_requisition
@@ -146,5 +165,9 @@ class RequisitionsController < ApplicationController
     params.require(:requisitions).map do |req_params|
       req_params.permit(:title, :department_id, :salary, :description)
     end
+  end
+
+  def render_error(message, status)
+    render json: { error: message }, status: status
   end
 end
