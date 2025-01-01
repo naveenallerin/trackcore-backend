@@ -3,6 +3,7 @@ FactoryBot.define do
     sequence(:title) { |n| "Software Engineer Position #{n}" }
     description { "We are looking for a talented software engineer to join our team." }
     location { "Remote" }
+
     status { :draft }
 
     trait :with_approvals do

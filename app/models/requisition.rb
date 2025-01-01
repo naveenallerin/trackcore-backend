@@ -15,6 +15,7 @@ class Requisition < ApplicationRecord
   has_many :workflow_steps
   has_many :applications
   has_many :candidates, through: :applications
+  has_many :approval_flows, -> { order(sequence: :asc) }, dependent: :destroy
 
   validates :title, presence: true
   validates :status, presence: true, inclusion: { in: %w[pending approved rejected] }
@@ -192,6 +193,16 @@ class Requisition < ApplicationRecord
     update!(status: :published) if approved?
   end
 
+  def check_approval_completion
+    return unless all_approvals_completed?
+    
+    if approval_flows.all?(&:approved?)
+      update!(status: :approved)
+    elsif approval_flows.any?(&:rejected?)
+      update!(status: :rejected)
+    end
+  end
+
   private
   
   def track_status_change
@@ -230,6 +241,10 @@ class Requisition < ApplicationRecord
 
   def invalidate_dashboard_cache
     Rails.cache.delete_matched("dashboard*")
+  end
+
+  def all_approvals_completed?
+    approval_flows.none?(&:pending?)
   end
 
   after_initialize :set_default_status, if: :new_record?

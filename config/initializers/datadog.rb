@@ -1,19 +1,25 @@
+require 'datadog/statsd'
+require 'ddtrace'
+
 Datadog.configure do |c|
-  c.env = Rails.env
+  # Remove explicit StatsD configuration as it's not needed
+  c.tracing.instrument :rails
+  c.tracing.instrument :redis
+  c.tracing.instrument :sidekiq
+  c.tracing.instrument :pg
+
+  # Service configuration
   c.service = 'trackcore-backend'
-  c.api_key = ENV['DATADOG_API_KEY']
-  
-  # Enable Rails integration
-  c.use :rails, {
-    service_name: 'trackcore-backend',
-    analytics_enabled: true,
-    request_queuing: true,
-    controller_service: 'trackcore-backend-web'
+  c.env = Rails.env
+  c.tags = {
+    'env' => Rails.env,
+    'service' => 'trackcore-backend'
   }
-  
-  # Enable Redis integration
-  c.use :redis, service_name: 'trackcore-backend-redis'
-  
-  # Enable Sidekiq integration
-  c.use :sidekiq, service_name: 'trackcore-backend-worker'
+
+  # Only enable if Datadog API key is present
+  if ENV['DATADOG_API_KEY'].present?
+    c.api_key = ENV['DATADOG_API_KEY']
+  else
+    c.tracing.enabled = false
+  end
 end

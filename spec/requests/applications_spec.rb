@@ -58,3 +58,4 @@ RSpec.describe "Applications", type: :request do
       expect(JSON.parse(response.body)).to be_an(Array)
     end
   end
+end

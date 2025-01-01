@@ -1,22 +1,39 @@
 require 'rails_helper'
 
 RSpec.describe Requisition, type: :model do
-  it { should belong_to(:user) }
-  it { should have_many(:approval_requests) }
-  it { should validate_presence_of(:title) }
-  
-  describe 'status validation' do
-    it 'should allow valid statuses' do
-      requisition = build(:requisition)
-      %w[pending approved rejected].each do |status|
-        requisition.status = status
-        expect(requisition).to be_valid
-      end
+  describe 'validations' do
+    it { should validate_presence_of(:job_title) }
+    it { should validate_presence_of(:department) }
+    it { should validate_presence_of(:status) }
+  end
+
+  describe 'associations' do
+    it { should belong_to(:department) }
+    it { should belong_to(:user).optional }
+    it { should have_many(:requisition_fields) }
+    it { should have_many(:approval_steps) }
+  end
+
+  describe '#can_transition_to?' do
+    let(:requisition) { create(:requisition, status: 'draft') }
+
+    it 'allows transition from draft to pending_approval' do
+      expect(requisition.can_transition_to?('pending_approval')).to be true
     end
-    
-    it 'should not allow invalid statuses' do
-      requisition = build(:requisition, status: 'invalid')
-      expect(requisition).not_to be_valid
+
+    it 'prevents invalid transitions' do
+      expect(requisition.can_transition_to?('closed')).to be false
+    end
+  end
+
+  describe '#clone' do
+    let(:requisition) { create(:requisition, :with_approval_steps) }
+
+    it 'creates a new draft requisition' do
+      cloned = RequisitionCloner.clone(requisition)
+      expect(cloned).to be_persisted
+      expect(cloned.status).to eq('draft')
+      expect(cloned.approval_steps.count).to eq(requisition.approval_steps.count)
     end
   end
 end

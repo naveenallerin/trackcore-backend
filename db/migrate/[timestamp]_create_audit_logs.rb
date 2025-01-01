@@ -1,14 +1,9 @@
-class CreateAuditLogs < ActiveRecord::Migration[7.0]
-  def change
-    create_table :audit_logs do |t|
-      t.references :user, null: false, foreign_key: true
-      t.string :action, null: false
-      t.string :old_status
-      t.string :new_status
-      t.text :candidate_ids
-      t.timestamps
-    end
+class AuditLog < ApplicationRecord
+  validates :event_type, :occurred_at, presence: true
+  
+  belongs_to :actor, polymorphic: true, optional: true
+  belongs_to :target, polymorphic: true, optional: true
 
-    add_index :audit_logs, :action
-  end
+  scope :recent, -> { order(occurred_at: :desc) }
+  scope :by_event, ->(type) { where(event_type: type) }
 end

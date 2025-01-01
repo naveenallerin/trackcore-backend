@@ -1,7 +1,7 @@
 class CreateInsightJob < ApplicationJob
   queue_as :default
 
-  def perform(*args)
-    # Do something later
+  def perform
+    # Add insight creation logic here
   end
 end

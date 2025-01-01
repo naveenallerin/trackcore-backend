@@ -1,18 +1,20 @@
 class CreateRequisitions < ActiveRecord::Migration[7.0]
   def change
     create_table :requisitions do |t|
-      t.string :title, null: false
+      t.string :job_title, null: false
+      t.references :department, null: false, foreign_key: true
       t.text :description
-      t.string :department
-      t.string :location
-      t.string :employment_type
-      t.integer :status, default: 0
-      t.jsonb :custom_fields, default: {}
-      t.timestamps
+      t.string :status, default: 'draft'
+      t.jsonb :metadata, default: {}
+      t.datetime :approved_at
+      t.datetime :published_at
+      t.datetime :closed_at
+      t.references :user, foreign_key: true
       
-      t.index :status
-      t.index :department
-      t.index [:title, :department, :location], name: 'idx_requisitions_search'
+      t.timestamps
     end
+
+    add_index :requisitions, :status
+    add_index :requisitions, :metadata, using: :gin
   end
 end

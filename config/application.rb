@@ -22,9 +22,7 @@ module TrackcoreBackend
     # Initialize configuration defaults for Rails 7.0
     config.load_defaults 7.0
 
-
-
-    # API-only configuration
+    # Configure API-only mode
     config.api_only = true
 
     # Basic settings
@@ -40,6 +38,7 @@ module TrackcoreBackend
     config.action_controller.perform_caching = true
     config.cache_store = :memory_store
     config.action_controller.default_protect_from_forgery = false
+    config.action_controller.allow_forgery_protection = false
 
     # CORS configuration
     config.x.cors.allowed_origins = ENV.fetch('CORS_ALLOWED_ORIGINS', '*')

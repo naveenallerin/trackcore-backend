@@ -1,43 +1,52 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:14
     container_name: trackcore_db
     environment:
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=trackcore_development
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trackcore_test
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: pg_isready -U postgres
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    restart: unless-stopped
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 10s
 
   redis:
     image: redis:7
     container_name: trackcore-backend-redis-1
+    ports:
+      - "6379:6379"
     volumes:
       - redis_data:/data
 
   app:
     build: .
     image: trackcore-backend-app:latest
+    env_file: .env
     ports:
       - "3000:3000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      RAILS_ENV: ${RAILS_ENV:-development}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/1}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DATABASE_URL: postgres://postgres:postgres@db:5432
+      REDIS_URL: redis://redis:6379/0
+      RAILS_ENV: test
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: ${DB_HOST:-db}
-      DB_PORT: ${DB_PORT:-5432}
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       SENTRY_DSN: ${SENTRY_DSN}
       DATADOG_API_KEY: ${DATADOG_API_KEY}
@@ -58,8 +67,10 @@ services:
     image: trackcore-backend-app:latest
     command: bundle exec sidekiq
     depends_on:
-      - redis
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       RAILS_ENV: ${RAILS_ENV:-production}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/1}

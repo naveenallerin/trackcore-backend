@@ -37,9 +37,9 @@ gem 'lograge'
 # Monitoring and Error Tracking
 gem 'sentry-ruby'
 gem 'sentry-rails'
-gem 'ddtrace'  # Datadog APM
-gem 'lograge'  # Structured logging
-gem 'oj'       # Fast JSON parsing for lograge
+gem 'ddtrace'          # Datadog APM
+gem 'dogstatsd-ruby'   # Datadog StatsD client
+gem 'oj'              # Fast JSON parsing for lograge
 
 # Security
 gem 'secure_headers'
@@ -55,10 +55,12 @@ gem 'brakeman'
 gem 'bundler-audit'
 gem 'ruby_audit'
 
+gem 'httparty'
+
 group :development, :test do
-  gem 'rspec-rails'
-  gem 'factory_bot_rails'
-  gem 'faker'
+  gem 'rspec-rails', '~> 6.0'
+  gem 'factory_bot_rails', '~> 6.2'
+  gem 'faker', '~> 3.0'
   gem 'pry-byebug'
   gem 'shoulda-matchers', '~> 5.0'
   gem 'database_cleaner-active_record'
@@ -67,4 +69,10 @@ group :development, :test do
   gem 'rubocop', require: false
   gem 'rubocop-rails', require: false
   gem 'rubocop-rspec', require: false
+  gem 'rubocop-rails-omakase', '~> 1.0'
+  gem 'rubocop-minitest', '~> 0.36.0'
+  gem 'rubocop-performance', '~> 1.23.0'
+  gem 'webmock', '~> 3.19'
+  gem 'vcr', '~> 6.1'
+  gem 'dotenv-rails'
 end

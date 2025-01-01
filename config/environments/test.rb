@@ -9,15 +9,16 @@ Rails.application.configure do
   config.server_timing = false
 
   # Usually caching is off in test:
-  # config.action_controller.perform_caching = false
+  config.action_controller.perform_caching = false
 
   # If you had mailers uncommented, you’d do:
   # config.action_mailer.delivery_method = :test
 
-  config.active_support.deprecation = :stderr
+  config.active_support.deprecation = :log
 
   # Raise exceptions instead of rendering exception templates.
-  config.action_dispatch.show_exceptions = false
+  config.action_dispatch.show_exceptions = true
+  config.action_dispatch.show_detailed_exceptions = false
 
   # Ensure paths are properly set for test environment
   custom_paths = %w[
@@ -39,6 +40,19 @@ Rails.application.configure do
   config.before_initialize do |app|
     app.config.paths.instance_variable_get(:@hash).dup
   end
+
+  config.hosts = nil
+  config.action_controller.allow_forgery_protection = false
+
+  # API specific settings
+  config.api_only = true
+  config.debug_exception_response_format = :api
+
+  # Configure logging
+  config.log_level = :debug
+
+  # Configure middleware
+  config.middleware.insert_before 0, Rack::RequestId
 
   # etc. (Adjust logging or debug flags if needed)
 end

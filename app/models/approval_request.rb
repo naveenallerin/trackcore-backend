@@ -17,6 +17,7 @@ class ApprovalRequest < ApplicationRecord
   validates :status, presence: true, inclusion: { in: %w[pending approved rejected] }
   validates :approver, presence: true
   validates :requisition_id, presence: true
+  validates :requisition, :approval_workflow, :approvable, :approver, presence: true
 
   # Basic scopes
   scope :pending, -> { where(status: :pending) }
