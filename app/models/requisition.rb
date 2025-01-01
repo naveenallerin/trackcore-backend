@@ -1,5 +1,5 @@
 class Requisition < ApplicationRecord
-  belongs_to :department
+  belongs_to :department, counter_cache: true
   belongs_to :user
   belongs_to :template, optional: true
   has_many :requisition_fields, dependent: :destroy
@@ -11,11 +11,12 @@ class Requisition < ApplicationRecord
   has_many :approvers, through: :approval_steps
   has_many :job_postings, dependent: :destroy
   has_many :approval_requests, dependent: :destroy
-  has_many :candidates
+  has_many :candidates, counter_cache: true
   has_many :workflow_steps
-  has_many :applications
+  has_many :applications, counter_cache: true
   has_many :candidates, through: :applications
   has_many :approval_flows, -> { order(sequence: :asc) }, dependent: :destroy
+  has_many :interviews, counter_cache: true
 
   has_paper_trail
 
@@ -29,7 +30,7 @@ class Requisition < ApplicationRecord
 
   # Enhanced validations
   validates :title, :department, :salary, presence: true
-  validates :salary, numericality: { greater_than: 0 }
+  validates :salary, numericality: { greater_than 0 }
   validate :validate_status_transition
   validate :validate_cfo_approval, if: :requires_cfo_approval?
   validates :hiring_cost, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
@@ -332,5 +333,11 @@ class Requisition < ApplicationRecord
       user_role: Current.user&.role,
       action_timestamp: Time.current
     }
+  end
+
+  def department_name
+    department&.name || 'Unknown Department'
+  rescue ActiveRecord::RecordNotFound
+    'Department Not Found'
   end
 end

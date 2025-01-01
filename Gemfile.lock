@@ -78,6 +78,9 @@ GEM
     ast (2.4.2)
     aws-eventstream (1.3.0)
     aws-partitions (1.1029.0)
+    aws-sdk-cloudwatch (1.108.0)
+      aws-sdk-core (~> 3, >= 3.210.0)
+      aws-sigv4 (~> 1.5)
     aws-sdk-core (3.214.1)
       aws-eventstream (~> 1, >= 1.3.0)
       aws-partitions (~> 1, >= 1.992.0)
@@ -256,6 +259,7 @@ GEM
       timeout
     net-smtp (0.5.0)
       net-protocol
+    newrelic_rpm (9.16.1)
     nio4r (2.7.4)
     nokogiri (1.18.1-aarch64-linux-gnu)
       racc (~> 1.4)
@@ -400,6 +404,8 @@ GEM
     ruby-progressbar (1.13.0)
     ruby_audit (2.3.1)
       bundler-audit (~> 0.9.0)
+    scout_apm (5.4.0)
+      parser
     secure_headers (7.1.0)
     sentry-rails (5.22.1)
       railties (>= 5.0)
@@ -458,6 +464,7 @@ PLATFORMS
 
 DEPENDENCIES
   active_model_serializers
+  aws-sdk-cloudwatch (~> 1.108)
   aws-sdk-s3 (~> 1.86)
   bcrypt (~> 3.1.7)
   blind_index
@@ -479,6 +486,7 @@ DEPENDENCIES
   jwt (~> 2.7)
   lockbox
   lograge
+  newrelic_rpm (~> 9.16)
   oj
   pagy (~> 9.3.3)
   paper_trail (~> 14.0)
@@ -500,6 +508,7 @@ DEPENDENCIES
   rubocop-rails-omakase (~> 1.0)
   rubocop-rspec
   ruby_audit
+  scout_apm (~> 5.4)
   secure_headers
   sentry-rails
   sentry-ruby

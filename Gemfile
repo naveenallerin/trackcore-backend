@@ -77,3 +77,7 @@ group :development, :test do
   gem 'dotenv-rails'
   gem 'rack-test'
 end
+
+gem "scout_apm", "~> 5.4"
+gem "newrelic_rpm", "~> 9.16"
+gem "aws-sdk-cloudwatch", "~> 1.108"
