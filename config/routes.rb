@@ -242,5 +242,17 @@ Rails.application.routes.draw do
         get :active
       end
     end
+
+    resources :requisitions do
+      member do
+        post :initiate_approval_flow
+      end
+    end
+
+    resources :approval_requests, only: [] do
+      member do
+        post :respond
+      end
+    end
   end
 end

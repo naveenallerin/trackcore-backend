@@ -10,5 +10,23 @@ class ApprovalRequestPolicy < ApplicationPolicy
   def reject?
     approve?
   end
+
+  def respond?
+    return false unless user
+    return true if user.admin?
+    
+    # Can respond if user has the approver role
+    record.approver_role == user.role
+  end
+
+  class Scope < Scope
+    def resolve
+      if user.admin?
+        scope.all
+      else
+        scope.where(approver_role: user.role)
+      end
+    end
+  end
 end
 
