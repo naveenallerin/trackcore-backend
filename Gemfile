@@ -56,6 +56,7 @@ gem 'bundler-audit'
 gem 'ruby_audit'
 
 gem 'httparty'
+gem 'ruby-openai'
 
 group :development, :test do
   gem 'rspec-rails', '~> 6.0'

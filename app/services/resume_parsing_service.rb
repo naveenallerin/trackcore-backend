@@ -19,7 +19,11 @@ class ResumeParsingService
     encoded_content = Base64.strict_encode64(document_content)
     
     response = make_api_request(encoded_content)
-    process_response(response)
+    parsed_data = process_response(response)
+    
+    # Enhance with AI analysis
+    ai_analysis = enhance_with_ai(document_content, parsed_data[:skills])
+    parsed_data.merge(ai_analysis)
   rescue Faraday::Error => e
     raise ParsingError, "API request failed: #{e.message}"
   rescue JSON::ParserError => e
@@ -74,6 +78,13 @@ class ResumeParsingService
       experience: extract_experience(parsed_resume),
       contact_info: extract_contact_info(parsed_resume)
     }
+  end
+
+  def enhance_with_ai(resume_text, explicit_skills)
+    ai_analyzer = AiResumeAnalyzerService.new
+    ai_analyzer.infer_skills(resume_text, explicit_skills)
+  rescue AiResumeAnalyzerService::AnalysisError => e
+    { implied_skills: [], skill_categories: {} }
   end
 
   def extract_skills(parsed_resume)
