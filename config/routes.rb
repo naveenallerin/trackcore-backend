@@ -27,6 +27,7 @@ Rails.application.routes.draw do
             get :advanced_search
             get :suggest  # For typeahead suggestions
             post 'bulk_disposition'
+            post 'knockout_and_dispose'
           end
           member do
             post :knockout_check
@@ -232,6 +233,7 @@ Rails.application.routes.draw do
         get :advanced_search
         get :suggest  # For typeahead suggestions
         post 'bulk_disposition'
+        post 'knockout_and_dispose'
       end
       resources :interviews, only: [:index, :create]
     end

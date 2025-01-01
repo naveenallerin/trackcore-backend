@@ -87,6 +87,32 @@ class CandidatesController < ApplicationController
     end
   end
 
+  def knockout_and_dispose
+    authorize Candidate, :bulk_disposition?
+
+    result = BulkKnockoutService.new(
+      candidate_ids: params[:candidate_ids],
+      current_user: current_user
+    ).perform
+
+    if result.success
+      render json: {
+        success: true,
+        summary: {
+          total_processed: result.passed_count + result.failed_count,
+          passed_count: result.passed_count,
+          failed_count: result.failed_count
+        },
+        failures: result.failures
+      }, status: :ok
+    else
+      render json: {
+        success: false,
+        errors: result.errors
+      }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def set_candidate
@@ -146,5 +172,10 @@ class CandidatesController < ApplicationController
     return false unless params[:candidate_ids].is_a?(Array)
     return false unless ALLOWED_STATUSES.include?(params[:new_status])
     true
+  end
+
+  def knockout_params
+    params.require(:candidate_ids)
+    params.permit(candidate_ids: [])
   end
 end
