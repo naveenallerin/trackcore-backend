@@ -27,6 +27,12 @@ class Requisition < ApplicationRecord
   validate :validate_status_transition, if: :status_changed?
   validate :validate_cfo_approval, if: -> { status_changed? && will_save_change_to_status?(to: "approved") }
 
+  # Enhanced validations
+  validates :title, :department, :salary, presence: true
+  validates :salary, numericality: { greater_than: 0 }
+  validate :validate_status_transition
+  validate :validate_cfo_approval, if: :requires_cfo_approval?
+
   # Add JSON columns for flexible storage
   serialize :metadata, JSON
   serialize :status_history, JSON
@@ -61,10 +67,11 @@ class Requisition < ApplicationRecord
   }
   scope :pending, -> { where(status: 'pending') }
   scope :rejected, -> { where(status: 'rejected') }
-  scope :active, -> { where(status: [:pending_approval, :approved, :published]) }
+  scope :active, -> { where(status: ['active', 'approved']) }
   scope :pending_approval, -> { where(status: 'pending_approval') }
   scope :for_department, ->(department) { where(department: department) }
   scope :approved_in_month, ->(month) { where(status: 'approved').where('EXTRACT(MONTH FROM approved_at) = ?', month) }
+  scope :needs_cfo, -> { where("salary > ?", 150000) }
   
   before_update :track_status_change, if: :status_changed?
   after_touch :clear_cached_status
@@ -208,6 +215,23 @@ class Requisition < ApplicationRecord
     end
   end
 
+  def requires_cfo_approval?
+    salary.to_i > 150000 && status_changed?(to: "approved")
+  end
+
+  def clone_with_associations(user)
+    transaction do
+      new_requisition = deep_clone(include: [:requisition_fields, :attachments])
+      new_requisition.assign_attributes(
+        status: :draft,
+        cfo_approved: false,
+        created_by: user.id,
+        updated_by: user.id
+      )
+      new_requisition
+    end
+  end
+
   private
   
   def track_status_change
@@ -257,18 +281,20 @@ class Requisition < ApplicationRecord
     
     allowed_transitions = {
       "draft" => ["submitted"],
-      "submitted" => ["approved"],
+      "submitted" => ["approved", "draft"],
       "approved" => []
     }
     
     unless allowed_transitions[status_was]&.include?(status)
-      errors.add(:status, "cannot transition from #{status_was} to #{status}")
+      errors.add(:status, :invalid_transition, 
+        message: "Cannot transition from #{status_was} to #{status}")
     end
   end
   
   def validate_cfo_approval
-    if salary.to_i > 150000 && !cfo_approved
-      errors.add(:base, "CFO approval required for salaries over $150,000")
+    unless cfo_approved?
+      errors.add(:base, :cfo_approval_required,
+        message: "CFO approval required for salaries over $150,000")
     end
   end
   
@@ -287,5 +313,20 @@ class Requisition < ApplicationRecord
 
   def set_default_status
     self.status ||= :draft
+  end
+
+  def track_version_metadata
+    paper_trail_event = case 
+      when status_changed? then 'status_change'
+      when saved_change_to_attribute?(:cfo_approved) then 'cfo_approval'
+      else 'update'
+    end
+    
+    self.paper_trail_event = paper_trail_event
+    self.paper_trail_metadata = {
+      user_id: Current.user&.id,
+      user_role: Current.user&.role,
+      action_timestamp: Time.current
+    }
   end
 end

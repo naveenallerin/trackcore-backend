@@ -1,4 +1,5 @@
 
+
 class RequisitionPolicy < ApplicationPolicy
   def index?
     true

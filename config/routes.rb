@@ -50,6 +50,8 @@ Rails.application.routes.draw do
             get :approval_status
             resources :comments, only: [:index, :create]
             resources :attachments, only: [:index, :create, :destroy]
+            post :post_to_boards
+            post :ai_generate_description
           end
           collection do
             post :bulk_create

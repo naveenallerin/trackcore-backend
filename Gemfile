@@ -75,4 +75,5 @@ group :development, :test do
   gem 'webmock', '~> 3.19'
   gem 'vcr', '~> 6.1'
   gem 'dotenv-rails'
+  gem 'rack-test'
 end
