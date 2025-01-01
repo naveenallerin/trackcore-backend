@@ -1,3 +1,4 @@
+
 class RequisitionSerializer
 
   include FastJsonapi::ObjectSerializer
