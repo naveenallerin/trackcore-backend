@@ -325,4 +325,108 @@ class Candidate < ApplicationRecord
   def update_market_demand_cache
     Rails.cache.delete_matched("market_demand*")
   end
+
+  # Constants for duplicate detection
+  EXACT_MATCH_FIELDS = %w[email phone].freeze
+  FUZZY_MATCH_FIELDS = %w[first_name last_name location].freeze
+  SIMILARITY_THRESHOLD = 0.6
+
+  # Scopes for duplicate detection
+  scope :with_similar_name, ->(first, last) {
+    where("similarity(first_name, ?) > ? OR similarity(last_name, ?) > ?",
+          first, SIMILARITY_THRESHOLD, last, SIMILARITY_THRESHOLD)
+  }
+
+  scope :with_similar_location, ->(location) {
+    where("similarity(location, ?) > ?", location, SIMILARITY_THRESHOLD)
+  }
+
+  # Class method to check for duplicates
+  def self.check_for_duplicates(params)
+    return [] if params.blank?
+
+    # Start with exact matches
+    matches = find_exact_matches(params)
+    
+    # Add fuzzy matches if needed
+    fuzzy_matches = find_fuzzy_matches(params)
+    
+    # Combine and remove duplicates
+    (matches + fuzzy_matches).uniq
+  end
+
+  # Instance method to find duplicates of an existing candidate
+  def find_duplicates
+    self.class.check_for_duplicates(
+      email: email,
+      phone: phone,
+      first_name: first_name,
+      last_name: last_name,
+      location: location
+    ).reject { |c| c.id == id }
+  end
+
+  private
+
+  def self.find_exact_matches(params)
+    queries = []
+    binds = []
+
+    EXACT_MATCH_FIELDS.each do |field|
+      if params[field.to_sym].present?
+        queries << "LOWER(#{field}) = LOWER(?)"
+        binds << params[field.to_sym].strip
+      end
+    end
+
+    return [] if queries.empty?
+
+    where(queries.join(' OR '), *binds)
+  end
+
+  def self.find_fuzzy_matches(params)
+    return [] unless FUZZY_MATCH_FIELDS.any? { |f| params[f.to_sym].present? }
+
+    base_scope = all
+
+    if params[:first_name].present? || params[:last_name].present?
+      base_scope = base_scope.with_similar_name(
+        params[:first_name].to_s.strip,
+        params[:last_name].to_s.strip
+      )
+    end
+
+    if params[:location].present?
+      base_scope = base_scope.with_similar_location(
+        params[:location].strip
+      )
+    end
+
+    base_scope
+  end
+
+  # Normalize data before save to improve matching
+  before_save :normalize_contact_info
+
+  def normalize_contact_info
+    self.email = email.to_s.downcase.strip
+    self.phone = phone.to_s.gsub(/[^0-9+]/, '')
+    self.first_name = first_name.to_s.strip
+    self.last_name = last_name.to_s.strip
+    self.location = location.to_s.strip
+  end
+
+  # Add merge tracking columns
+  scope :merged, -> { where.not(merged_into_id: nil) }
+  scope :not_merged, -> { where(merged_into_id: nil) }
+  
+  belongs_to :merged_into, class_name: 'Candidate', optional: true
+  has_many :merged_from, class_name: 'Candidate', foreign_key: 'merged_into_id'
+
+  # Ensure email remains unique even for merged records
+  validates :email, uniqueness: true, unless: :merged?
+  
+  def merged?
+    merged_into_id.present?
+  end
 end
