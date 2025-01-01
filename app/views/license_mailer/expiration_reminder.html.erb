@@ -1,0 +1,11 @@
+<h1>License Expiration Reminder</h1>
+
+<p>Hello <%= @candidate.name %>,</p>
+
+<p>Your <%= @license.license_type.name %> license (#<%= @license.license_number %>) 
+will expire in <%= @days_until_expiry %> days on <%= @license.expiration_date.strftime('%B %d, %Y') %>.</p>
+
+<p>Please take necessary steps to renew your license before it expires.</p>
+
+<p>Best regards,<br>
+HR Team</p>

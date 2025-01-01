@@ -8,6 +8,7 @@ gem 'rails', '~> 7.0.0'
 gem 'pg', '~> 1.1'
 gem 'puma', '~> 5.0'
 
+
 # Auth & Authorization
 gem 'devise', '~> 4.9.2'
 gem 'devise-jwt'
@@ -26,6 +27,7 @@ gem 'pg_search', '~> 2.3'
 # Background Processing
 gem 'sidekiq'
 gem 'redis'
+gem 'sidekiq-scheduler'
 
 # File Storage
 gem 'aws-sdk-s3', '~> 1.86'
@@ -57,6 +59,7 @@ gem 'ruby_audit'
 
 gem 'httparty'
 gem 'ruby-openai'
+gem 'faraday'
 
 group :development, :test do
   gem 'rspec-rails', '~> 6.0'

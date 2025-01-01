@@ -8,6 +8,16 @@ class CandidateLicense < ApplicationRecord
   validates :issue_date, presence: true
   validates :status, inclusion: { in: %w[active expired revoked] }
 
+  scope :expiring_soon, ->(days = 30) {
+    where(status: 'active')
+      .where('expiration_date BETWEEN ? AND ?', Date.current, days.days.from_now)
+  }
+
+  scope :expired_not_updated, -> {
+    where(status: 'active')
+      .where('expiration_date < ?', Date.current)
+  }
+
   def expired?
     return false if expiration_date.nil?
     expiration_date < Date.current
