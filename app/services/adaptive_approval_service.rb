@@ -21,11 +21,13 @@ class AdaptiveApprovalService
     raise ArgumentError, 'Requisition must be present' unless requisition
     raise ArgumentError, 'Requisition must be persisted' unless requisition.persisted?
     raise ArgumentError, 'Salary must be present' if requisition.salary.nil?
+    raise ArgumentError, 'Job level must be present' if requisition.job_level.nil?
   end
 
   def determine_approvers_for(requisition)
     approvers = base_approval_chain
     approvers += high_salary_approval_chain if high_salary?(requisition)
+    approvers += executive_approval_chain if requisition.executive?
     approvers.uniq
   end
 
@@ -42,11 +44,15 @@ class AdaptiveApprovalService
   end
 
   def base_approval_chain
-    ['finance_manager', 'hr_manager']
+    ['hiring_manager', 'hr_manager']
   end
 
   def high_salary_approval_chain
-    ['cfo']
+    ['finance_director', 'cfo']
+  end
+
+  def executive_approval_chain
+    ['cfo', 'ceo']
   end
 
   def high_salary?(requisition)

@@ -150,7 +150,7 @@ class RequisitionsController < ApplicationController
 
   def requisition_params
     params.require(:requisition).permit(
-      :title, :department, :salary, :status, :cfo_approved, :seasonal,
+      :title, :department, :salary, :status, :cfo_approved, :seasonal, :job_level,
       # Add other permitted attributes here
     )
   end
@@ -163,7 +163,7 @@ class RequisitionsController < ApplicationController
 
   def bulk_params
     params.require(:requisitions).map do |req_params|
-      req_params.permit(:title, :department_id, :salary, :description, :seasonal)
+      req_params.permit(:title, :department_id, :salary, :description, :seasonal, :job_level)
     end
   end
 
