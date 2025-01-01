@@ -23,6 +23,9 @@ Rails.application.routes.draw do
           collection do
             post :bulk_update
             post :merge
+            get :search
+            get :advanced_search
+            get :suggest  # For typeahead suggestions
           end
           member do
             post :knockout_check
@@ -223,6 +226,11 @@ Rails.application.routes.draw do
     get '/metrics' => 'monitoring#metrics'
 
     resources :candidates do
+      collection do
+        get :search
+        get :advanced_search
+        get :suggest  # For typeahead suggestions
+      end
       resources :interviews, only: [:index, :create]
     end
     resources :interviews, only: [:show, :update, :destroy]
