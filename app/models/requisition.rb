@@ -17,11 +17,15 @@ class Requisition < ApplicationRecord
   has_many :candidates, through: :applications
   has_many :approval_flows, -> { order(sequence: :asc) }, dependent: :destroy
 
+  has_paper_trail
+
   validates :title, presence: true
   validates :status, presence: true, inclusion: { in: %w[pending approved rejected] }
   validates :description, presence: true
   validates :department, presence: true
   validates :approval_state, inclusion: { in: %w[pending approved rejected] }
+  validate :validate_status_transition, if: :status_changed?
+  validate :validate_cfo_approval, if: -> { status_changed? && will_save_change_to_status?(to: "approved") }
 
   # Add JSON columns for flexible storage
   serialize :metadata, JSON
@@ -34,7 +38,8 @@ class Requisition < ApplicationRecord
     published: 3,
     closed: 4,
     cancelled: 5,
-    open: 1
+    open: 1,
+    submitted: 1
   }
   
   scope :by_status, ->(status) { where(status: status) if status.present? }
@@ -245,6 +250,37 @@ class Requisition < ApplicationRecord
 
   def all_approvals_completed?
     approval_flows.none?(&:pending?)
+  end
+
+  def validate_status_transition
+    return if status_was.nil?
+    
+    allowed_transitions = {
+      "draft" => ["submitted"],
+      "submitted" => ["approved"],
+      "approved" => []
+    }
+    
+    unless allowed_transitions[status_was]&.include?(status)
+      errors.add(:status, "cannot transition from #{status_was} to #{status}")
+    end
+  end
+  
+  def validate_cfo_approval
+    if salary.to_i > 150000 && !cfo_approved
+      errors.add(:base, "CFO approval required for salaries over $150,000")
+    end
+  end
+  
+  def needs_cfo_approval?
+    salary.to_i > 150000
+  end
+  
+  def clone_requisition
+    new_requisition = self.dup
+    new_requisition.status = "draft"
+    new_requisition.cfo_approved = false
+    new_requisition
   end
 
   after_initialize :set_default_status, if: :new_record?

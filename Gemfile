@@ -50,7 +50,7 @@ gem 'blind_index'
 gem 'rack-attack'
 
 # Auditing & Security
-gem 'paper_trail', '~> 12.0'
+gem 'paper_trail', '~> 14.0'
 gem 'brakeman'
 gem 'bundler-audit'
 gem 'ruby_audit'
