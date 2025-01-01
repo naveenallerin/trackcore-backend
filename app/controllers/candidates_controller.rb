@@ -13,6 +13,8 @@ class CandidatesController < ApplicationController
   RATE_LIMIT = 100  # requests
   RATE_PERIOD = 1.hour
 
+  ALLOWED_STATUSES = %w[rejected interview_invited shortlisted hired].freeze
+
   # GET /candidates
   def index
     candidates = Candidate.includes(:skills, :experiences)
@@ -55,6 +57,34 @@ class CandidatesController < ApplicationController
   def destroy
     @candidate.destroy
     head :no_content  # HTTP 204
+  end
+
+  def bulk_disposition
+    authorize Candidate, :bulk_disposition?
+
+    unless valid_bulk_params?
+      return render json: { error: 'Invalid parameters' }, status: :unprocessable_entity
+    end
+
+    result = BulkDispositionService.new(
+      candidate_ids: params[:candidate_ids],
+      new_status: params[:new_status],
+      current_user: current_user
+    ).perform
+
+    if result.success?
+      render json: {
+        success: true,
+        updated_count: result.updated_count,
+        failed_ids: result.failed_ids,
+        message: result.message
+      }, status: :ok
+    else
+      render json: {
+        success: false,
+        error: result.error
+      }, status: :unprocessable_entity
+    end
   end
 
   private
@@ -109,5 +139,12 @@ class CandidatesController < ApplicationController
                  :experience_level, :location, :availability,
                  :remote_preference, :salary_expectation,
                  skills: [], education: [], experience: [])
+  end
+
+  def valid_bulk_params?
+    return false if params[:candidate_ids].blank? || params[:new_status].blank?
+    return false unless params[:candidate_ids].is_a?(Array)
+    return false unless ALLOWED_STATUSES.include?(params[:new_status])
+    true
   end
 end
