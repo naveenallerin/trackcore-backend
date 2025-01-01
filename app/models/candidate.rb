@@ -13,6 +13,58 @@ class Candidate < ApplicationRecord
     "#{first_name} #{last_name}".strip
   end
 
+  # Add versioning
+  has_paper_trail only: [:active, :status, :deactivation_reason]
+
+  # Add associations
+  belongs_to :deactivated_by, class_name: 'User', optional: true
+
+  # Add default scope to exclude inactive records
+  default_scope -> { where(active: true) }
+
+  # Explicit scope to override default scope when needed
+  scope :with_inactive, -> { unscope(where: :active) }
+  scope :inactive, -> { with_inactive.where(active: false) }
+
+  # Update existing active scope to consider both status and active flag
+  scope :active, -> { 
+    where(active: true, status: 'active') 
+  }
+
+  # Deactivation methods
+  def deactivate!(reason: nil, user: nil)
+    transaction do
+      update!(
+        active: false,
+        deactivated_at: Time.current,
+        deactivated_by: user,
+        deactivation_reason: reason,
+        status: 'inactive'
+      )
+
+      # Optionally notify relevant parties
+      NotificationService.candidate_deactivated(self) if defined?(NotificationService)
+      
+      # Log the event
+      log_deactivation(reason, user)
+    end
+  end
+
+  def reactivate!(user: nil)
+    transaction do
+      update!(
+        active: true,
+        deactivated_at: nil,
+        deactivated_by: nil,
+        deactivation_reason: nil,
+        status: 'active'
+      )
+
+      # Log the reactivation
+      log_reactivation(user)
+    end
+  end
+
   scope :active, -> { where(status: 'active') }
 
   # Search scopes
@@ -97,7 +149,10 @@ class Candidate < ApplicationRecord
 
   # Combined search method
   def self.advanced_search(params)
-    candidates = all
+    # Start with base scope that includes active check
+    base_scope = params[:include_inactive] ? with_inactive : all
+
+    candidates = base_scope
 
     candidates = candidates.search_by_all_fields(params[:query]) if params[:query].present?
     candidates = candidates.with_skills(params[:skills]) if params[:skills].present?
@@ -428,5 +483,26 @@ class Candidate < ApplicationRecord
   
   def merged?
     merged_into_id.present?
+  end
+
+  private
+
+  def log_deactivation(reason, user)
+    Rails.logger.info(
+      "[Candidate Deactivation] ID: #{id}, " \
+      "Name: #{full_name}, " \
+      "Reason: #{reason}, " \
+      "Deactivated by: #{user&.email || 'System'}, " \
+      "Time: #{Time.current}"
+    )
+  end
+
+  def log_reactivation(user)
+    Rails.logger.info(
+      "[Candidate Reactivation] ID: #{id}, " \
+      "Name: #{full_name}, " \
+      "Reactivated by: #{user&.email || 'System'}, " \
+      "Time: #{Time.current}"
+    )
   end
 end
