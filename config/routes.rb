@@ -231,5 +231,14 @@ Rails.application.routes.draw do
         put :reject
       end
     end
+
+    resources :brand_templates do
+      member do
+        get :versions
+      end
+      collection do
+        get :active
+      end
+    end
   end
 end
