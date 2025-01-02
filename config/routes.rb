@@ -36,6 +36,7 @@ Rails.application.routes.draw do
 
             patch :archive
             post :upload_resume
+            post :deactivate
           end
           resources :licenses, controller: 'candidate_licenses' do
             member do
@@ -227,6 +228,8 @@ Rails.application.routes.draw do
           end
         end
 
+        resources :candidate_overviews, only: [:index]
+
       end
     end
 
@@ -276,5 +279,9 @@ Rails.application.routes.draw do
         post :respond
       end
     end
+
+    get 'unsubscribe/:token', 
+        to: 'notifications#unsubscribe', 
+        as: :unsubscribe_notifications
   end
 end

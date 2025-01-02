@@ -1,0 +1,25 @@
+<h1>Application Status Update</h1>
+
+<p>Dear <%= @candidate.first_name %>,</p>
+
+<p>Your application status has been updated to: <strong><%= @stage.name %></strong></p>
+
+<% case @stage.name %>
+<% when 'Interviewing' %>
+  <p>We'll be in touch shortly to schedule your interview.</p>
+<% when 'Offer' %>
+  <p>Congratulations! We're preparing your offer details.</p>
+<% when 'Hired' %>
+  <p>Welcome aboard! Our HR team will contact you with next steps.</p>
+<% else %>
+  <p>We'll keep you updated on any further developments.</p>
+<% end %>
+
+<hr>
+
+<p>
+  <small>
+    To unsubscribe from these notifications, 
+    <a href="<%= unsubscribe_notifications_url(token: @unsubscribe_token) %>">click here</a>
+  </small>
+</p>

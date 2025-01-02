@@ -2,12 +2,17 @@ class Candidate < ApplicationRecord
   belongs_to :requisition, optional: true
   has_many :notes
   has_many :interviews
+  belongs_to :pipeline_stage
   
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :first_name, :last_name, presence: true, length: { minimum: 2 }
   validates :primary_skill, presence: true, unless: :draft?
   validates :location, presence: true, unless: :draft?
   validates :status, presence: true, inclusion: { in: %w[active inactive withdrawn hired] }
+  validates :pipeline_stage, presence: true
+  validate :validate_stage_transition, on: :update, if: :pipeline_stage_id_changed?
+  validate :pipeline_stage_belongs_to_department
+  validate :validate_stage_sequence
   
   def full_name
     "#{first_name} #{last_name}".strip
@@ -168,6 +173,20 @@ class Candidate < ApplicationRecord
   def update_resume_text(text)
     update(resume_text: text)
     ResumeParsingJob.perform_async(id) if text_changed?
+  end
+
+  def advance_stage!
+    next_stage = pipeline_stage.next_stage
+    return false unless next_stage
+    
+    update!(pipeline_stage: next_stage)
+  end
+  
+  def revert_stage!
+    previous_stage = pipeline_stage.previous_stage
+    return false unless previous_stage
+    
+    update!(pipeline_stage: previous_stage)
   end
 
   private
@@ -503,6 +522,103 @@ class Candidate < ApplicationRecord
       "Name: #{full_name}, " \
       "Reactivated by: #{user&.email || 'System'}, " \
       "Time: #{Time.current}"
+    )
+  end
+
+  def validate_stage_transition
+    return unless pipeline_stage_id_changed?
+    
+    old_stage = PipelineStage.find_by(id: pipeline_stage_id_was)
+    new_stage = PipelineStage.find_by(id: pipeline_stage_id)
+    
+    return if old_stage.nil? || new_stage.nil?
+    
+    unless [old_stage.next_stage&.id, old_stage.previous_stage&.id].compact.include?(new_stage.id)
+      errors.add(:pipeline_stage, 'can only move to adjacent stages')
+    end
+  end
+
+  after_commit :notify_stage_change, if: :saved_change_to_pipeline_stage_id?
+  
+  def generate_unsubscribe_token
+    Rails.application.message_verifier('candidate_notifications').generate(
+      { candidate_id: id, email: email },
+      purpose: :unsubscribe,
+      expires_in: 1.year
+    )
+  end
+
+  private
+
+  def notify_stage_change
+    return unless saved_change_to_pipeline_stage_id?
+    
+    previous_stage_id = saved_change_to_pipeline_stage_id.first
+    PipelineStageNotificationJob.perform_later(id, previous_stage_id)
+  end
+
+  # Track stage timing
+  before_save :track_stage_duration, if: :pipeline_stage_id_changed?
+  after_commit :log_stage_metrics, if: :saved_change_to_pipeline_stage_id?
+
+  # Stage transition methods with error handling
+  def transition_to_stage!(new_stage)
+    return false unless can_transition_to?(new_stage)
+
+    transaction do
+      self.stage_entered_at = Time.current
+      update!(pipeline_stage: new_stage)
+    rescue ActiveRecord::RecordInvalid => e
+      Bugsnag.notify(e) if defined?(Bugsnag)
+      return false
+    end
+
+    true
+  end
+
+  def can_transition_to?(new_stage)
+    return false unless new_stage
+    return true if pipeline_stage.nil? # Initial stage
+
+    [pipeline_stage.next_stage&.id, pipeline_stage.previous_stage&.id].compact.include?(new_stage.id)
+  end
+
+  private
+
+  def pipeline_stage_belongs_to_department
+    return unless pipeline_stage && requisition&.department
+    
+    unless pipeline_stage.department_id == requisition.department_id
+      errors.add(:pipeline_stage, 'must belong to the same department as requisition')
+    end
+  end
+
+  def validate_stage_sequence
+    return unless pipeline_stage_id_changed? && pipeline_stage_id_was.present?
+    
+    unless can_transition_to?(pipeline_stage)
+      errors.add(:pipeline_stage, 'invalid stage transition')
+    end
+  end
+
+  def track_stage_duration
+    return unless pipeline_stage_id_changed?
+    
+    self.stage_entered_at = Time.current
+    self.stage_duration = calculate_stage_duration
+  end
+
+  def calculate_stage_duration
+    return 0 unless stage_entered_at
+    ((Time.current - stage_entered_at) / 1.day).round
+  end
+
+  def log_stage_metrics
+    StageMetricsJob.perform_later(
+      candidate_id: id,
+      previous_stage_id: saved_change_to_pipeline_stage_id.first,
+      new_stage_id: pipeline_stage_id,
+      duration: stage_duration
     )
   end
 end
