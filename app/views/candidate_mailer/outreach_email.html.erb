@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+</head>
+<body>
+  <p>Hello <%= @candidate.first_name %>,</p>
+
+  <div class="message-content">
+    <%= simple_format(@message) %>
+  </div>
+
+  <p>Best regards,<br>
+  <%= Rails.application.credentials.dig(:company, :name) %> Recruiting Team</p>
+
+  <hr>
+  <p style="font-size: small; color: #666;">
+    To unsubscribe from these messages, <a href="<%= @unsubscribe_url %>">click here</a>.
+  </p>
+</body>
+</html>

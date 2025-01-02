@@ -23,6 +23,7 @@ class Candidate < ApplicationRecord
 
   # Add associations
   belongs_to :deactivated_by, class_name: 'User', optional: true
+  has_many :communication_preferences, class_name: 'CandidateCommunicationPreference'
 
   # Add default scope to exclude inactive records
   default_scope -> { where(active: true) }
@@ -620,5 +621,35 @@ class Candidate < ApplicationRecord
       new_stage_id: pipeline_stage_id,
       duration: stage_duration
     )
+  end
+
+  # Add Devise modules
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :validatable,
+         :confirmable, :lockable, :trackable
+
+  # Strong password requirements
+  validate :password_complexity
+
+  # Profile completion tracking
+  def profile_completion_percentage
+    completed_fields = [
+      email.present?,
+      first_name.present?,
+      last_name.present?,
+      location.present?,
+      primary_skill.present?,
+      phone.present?
+    ]
+
+    ((completed_fields.count(true).to_f / completed_fields.length) * 100).round
+  end
+
+  private
+
+  def password_complexity
+    return if password.blank? || password =~ /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
+
+    errors.add :password, 'must include at least one letter, number, and special character'
   end
 end

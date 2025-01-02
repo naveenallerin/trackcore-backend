@@ -1,4 +1,6 @@
 class CandidateMailer < ApplicationMailer
+  default from: Rails.application.credentials.dig(:mail, :from_address)
+
   def stage_change_notification(candidate)
     @candidate = candidate
     @stage = candidate.pipeline_stage
@@ -34,6 +36,17 @@ class CandidateMailer < ApplicationMailer
     raise
   end
 
+  def outreach_email(candidate, message)
+    @candidate = candidate
+    @message = message
+    @unsubscribe_url = generate_unsubscribe_url(@candidate)
+
+    mail(
+      to: @candidate.email,
+      subject: "Message from #{Rails.application.credentials.dig(:company, :name)} Recruiting"
+    )
+  end
+
   private
 
   def unsubscribe_url(email:)
@@ -47,5 +60,10 @@ class CandidateMailer < ApplicationMailer
       expires_in: 1.year,
       email: email
     )
+  end
+
+  def generate_unsubscribe_url(candidate)
+    token = candidate.generate_unsubscribe_token
+    unsubscribe_candidate_url(token: token)
   end
 end
