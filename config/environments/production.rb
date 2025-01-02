@@ -39,6 +39,25 @@ Rails.application.configure do
   # Mailers would only be set if you’d re-enable action_mailer in application.rb.
   # e.g.: config.action_mailer.raise_delivery_errors = false
 
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.smtp_settings = {
+    address: 'smtp.sendgrid.net',
+    port: 587,
+    domain: Rails.application.credentials.dig(:sendgrid, :domain),
+    user_name: 'apikey',
+    password: Rails.application.credentials.dig(:sendgrid, :api_key),
+    authentication: :plain,
+    enable_starttls_auto: true
+  }
+
+  config.action_mailer.default_url_options = {
+    host: Rails.application.credentials.dig(:app_host),
+    protocol: 'https'
+  }
+
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = true
+
   # You can serve static files from your app if you’re not using a separate server:
   # config.public_file_server.enabled = ENV['RAILS_SERVE_STATIC_FILES'].present?
 

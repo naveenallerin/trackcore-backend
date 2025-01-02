@@ -9,15 +9,7 @@ class EmailTemplate < ApplicationRecord
   before_save :extract_required_placeholders
   
   def render(context = {})
-    rendered = body.dup
-    context.each do |key, value|
-      rendered.gsub!(/\{\{#{key}\}\}/, value.to_s)
-    end
-    
-    missing = required_placeholders - context.keys.map(&:to_s)
-    raise MissingPlaceholderError.new(missing) if missing.any?
-    
-    rendered + (footer.present? ? "\n\n#{footer}" : '')
+    EmailTemplateRenderer.render(self, context)
   end
   
   private
