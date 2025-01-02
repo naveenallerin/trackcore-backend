@@ -36,6 +36,7 @@ Rails.application.routes.draw do
 
             patch :archive
             post :upload_resume
+
             post :deactivate
           end
           resources :licenses, controller: 'candidate_licenses' do

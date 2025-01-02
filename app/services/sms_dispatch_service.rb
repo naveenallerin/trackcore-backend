@@ -61,19 +61,14 @@ class SmsDispatchService
       'Message cannot be empty'
     when 21610
       'Message too long'
-    when 21612
-      'The from phone number is not a valid, SMS-capable Twilio phone number'
     else
       "SMS delivery failed: #{error.message}"
     end
 
-    Rails.logger.error("[SMS Dispatch] Twilio error: #{error.code} - #{error.message}")
-    
     raise DeliveryError, error_message
   end
 
   def handle_general_error(error)
-    Rails.logger.error("[SMS Dispatch] General error: #{error.message}")
     raise DeliveryError, 'SMS delivery failed due to an unexpected error'
   end
 end

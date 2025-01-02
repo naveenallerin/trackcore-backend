@@ -9,7 +9,7 @@ class CandidateMailer < ApplicationMailer
     mail(
       to: @candidate.email,
       subject: "Your application status has been updated at #{Rails.application.config.company_name}"
-    )
+      )
   end
 
   def send_template(email_template, recipient_email, variables = {})
@@ -44,6 +44,24 @@ class CandidateMailer < ApplicationMailer
     mail(
       to: @candidate.email,
       subject: "Message from #{Rails.application.credentials.dig(:company, :name)} Recruiting"
+    )
+  end
+
+  def deletion_request_confirmation(candidate)
+    @candidate = candidate
+    @deletion_date = 30.days.from_now.to_date
+
+    mail(
+      to: candidate.email,
+      subject: 'Your Account Deletion Request Has Been Received'
+    )
+  end
+
+  def deletion_completed(email:)
+    mail(
+      to: email,
+      subject: 'Your Account Has Been Deleted',
+      body: 'Your account and personal data have been successfully anonymized as requested.'
     )
   end
 

@@ -15,6 +15,7 @@ gem 'devise-jwt'
 gem 'pundit'
 gem 'jwt', '~> 2.7'
 gem 'bcrypt', '~> 3.1.7'
+gem 'twilio-ruby'
 
 # API & Serialization
 gem 'rack-cors'

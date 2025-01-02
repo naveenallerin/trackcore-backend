@@ -19,7 +19,7 @@ class Candidate < ApplicationRecord
   end
 
   # Add versioning
-  has_paper_trail only: [:active, :status, :deactivation_reason]
+  has_paper_trail only: [:active, :status, :deactivation_reason, :data_retention_status, :anonymized_at]
 
   # Add associations
   belongs_to :deactivated_by, class_name: 'User', optional: true
@@ -651,5 +651,72 @@ class Candidate < ApplicationRecord
     return if password.blank? || password =~ /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
 
     errors.add :password, 'must include at least one letter, number, and special character'
+  end
+
+  # Add GDPR-related status
+  enum data_retention_status: {
+    active: 'active',
+    pending_deletion: 'pending_deletion',
+    anonymized: 'anonymized'
+  }, _prefix: true
+
+  # Track data deletion requests
+  has_paper_trail only: [:data_retention_status, :anonymized_at]
+
+  def request_data_deletion!
+    transaction do
+      update!(
+        data_retention_status: :pending_deletion,
+        deletion_requested_at: Time.current
+      )
+      
+      # Schedule actual deletion/anonymization
+      DataDeletionJob.perform_in(30.days, id)
+      
+      # Notify relevant parties
+      CandidateMailer.deletion_request_confirmation(self).deliver_later
+    end
+  end
+
+  def anonymize!
+    transaction do
+      # Store minimal required data for legal/audit purposes
+      required_data = {
+        requisition_ids: requisition_ids,
+        interview_dates: interviews.pluck(:scheduled_at),
+        application_dates: candidate_applications.pluck(:created_at)
+      }
+
+      # Anonymize personal data
+      update_columns(
+        email: "deleted_#{id}@redacted.example.com",
+        first_name: 'Redacted',
+        last_name: 'User',
+        phone: nil,
+        location: nil,
+        resume_text: nil,
+        primary_skill: nil,
+        data_retention_status: :anonymized,
+        anonymized_at: Time.current,
+        anonymized_data: required_data
+      )
+
+      # Anonymize related records
+      communication_preferences.destroy_all
+      notes.update_all(content: '[Redacted]')
+      
+      # Keep interview records but remove personal details
+      interviews.update_all(
+        candidate_notes: '[Redacted]',
+        interviewer_notes: '[Redacted]'
+      )
+    end
+  end
+
+  private
+
+  def handle_gdpr_deletion
+    return unless data_retention_status_changed? && data_retention_status == 'pending_deletion'
+    DataDeletionJob.perform_in(30.days, id)
   end
 end
