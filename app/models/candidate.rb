@@ -1,4 +1,6 @@
 class Candidate < ApplicationRecord
+  include EngagementTracking
+  
   belongs_to :requisition, optional: true
   has_many :notes
   has_many :interviews
@@ -718,5 +720,18 @@ class Candidate < ApplicationRecord
   def handle_gdpr_deletion
     return unless data_retention_status_changed? && data_retention_status == 'pending_deletion'
     DataDeletionJob.perform_in(30.days, id)
+  end
+
+  # Add Warden hooks for login tracking
+  Warden::Manager.after_authentication do |user, auth, opts|
+    if user.is_a?(Candidate)
+      user.track_engagement(
+        'login_detected',
+        {
+          ip_address: auth.request.remote_ip,
+          user_agent: auth.request.user_agent
+        }
+      )
+    end
   end
 end
