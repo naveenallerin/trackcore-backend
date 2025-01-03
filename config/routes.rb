@@ -288,5 +288,12 @@ Rails.application.routes.draw do
     get 'unsubscribe/:token', 
         to: 'notifications#unsubscribe', 
         as: :unsubscribe_notifications
+
+    namespace :analytics do
+      get 'pipeline'
+      get 'dei'
+      get 'time_to_fill'
+      get 'export'
+    end
   end
 end
