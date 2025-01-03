@@ -65,7 +65,7 @@ gem 'faraday'
 gem 'aasm'
 
 group :development, :test do
-  gem 'rspec-rails', '~> 6.0'
+  gem 'rspec-rails', '~> 7.1'
   gem 'factory_bot_rails', '~> 6.2'
   gem 'faker', '~> 3.0'
   gem 'pry-byebug'
