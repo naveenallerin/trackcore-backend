@@ -1,9 +1,30 @@
 class AuditLog < ApplicationRecord
-  belongs_to :user
+  belongs_to :actor, polymorphic: true, optional: true
+  belongs_to :resource, polymorphic: true, optional: true
 
-  validates :action, :candidate_ids, presence: true
+  validates :event_type, presence: true
 
-  scope :bulk_updates, -> { where(action: 'bulk_update') }
+  # Event types for compliance tracking
+  EVENTS = {
+    data_access: 'data_access',
+    data_export: 'data_export',
+    data_modification: 'data_modification',
+    authentication: 'authentication',
+    authorization: 'authorization'
+  }.freeze
+
+  scope :recent, -> { order(created_at: :desc).limit(100) }
+  scope :by_event, ->(event) { where(event_type: event) }
+
+  def self.log_access!(actor:, resource:, ip_address: nil, notes: nil)
+    create!(
+      event_type: EVENTS[:data_access],
+      actor: actor,
+      resource: resource,
+      ip_address: ip_address,
+      notes: notes
+    )
+  end
 end
 
 module Security

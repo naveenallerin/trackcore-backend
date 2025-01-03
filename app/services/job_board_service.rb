@@ -16,6 +16,25 @@ class JobBoardService
     @adapter.remove_job(job)
   end
 
+  class << self
+    def post_to_boards(requisition_id)
+      requisition = Requisition.find(requisition_id)
+      
+      IntegrationConfig.where(active: true).find_each do |config|
+        JobBoardWorker.perform_async(
+          requisition_id,
+          config.id
+        )
+      end
+    end
+
+    def sync_postings
+      IntegrationConfig.where(active: true).find_each do |config|
+        JobBoardSyncWorker.perform_async(config.id)
+      end
+    end
+  end
+
   private
 
   def create_adapter

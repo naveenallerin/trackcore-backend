@@ -155,6 +155,10 @@ Rails.application.routes.draw do
           end
           resources :documents, only: [:index, :show, :update]
           resources :job_recommendations, only: [:index]
+          resources :interviews, only: [:index] do
+            post :select_slot, on: :member
+          end
+          get 'auth/:provider/callback', to: 'sessions#omniauth'
         end
 
         resources :interviews do
@@ -235,6 +239,7 @@ Rails.application.routes.draw do
           post :start, on: :collection
         end
 
+        resources :requisitions
       end
     end
 

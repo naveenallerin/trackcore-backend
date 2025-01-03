@@ -36,4 +36,31 @@ RSpec.describe Requisition, type: :model do
       expect(cloned.approval_steps.count).to eq(requisition.approval_steps.count)
     end
   end
+
+  describe 'finance approval checks' do
+    let(:requisition) { create(:requisition, status: 'pending_approval', salary_range: '150000') }
+
+    it 'creates finance approval request for high salary requisitions' do
+      expect {
+        requisition.approve!
+      }.to change(requisition.approval_requests, :count).by(1)
+
+      expect(requisition.approval_requests.last.approver_type).to eq('finance')
+    end
+  end
+
+  describe 'concurrency handling' do
+    let(:requisition) { create(:requisition) }
+
+    it 'prevents concurrent updates' do
+      requisition_1 = Requisition.find(requisition.id)
+      requisition_2 = Requisition.find(requisition.id)
+
+      requisition_1.update!(title: 'Updated First')
+      
+      expect {
+        requisition_2.update!(title: 'Updated Second')
+      }.to raise_error(ActiveRecord::StaleObjectError)
+    end
+  end
 end

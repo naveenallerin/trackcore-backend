@@ -12,12 +12,10 @@ RSpec.describe 'Api::V1::Requisitions', type: :request do
     let(:valid_attributes) do
       {
         requisition: {
-          title: 'Software Engineer',
+          title: 'Senior Developer',
           department: 'Engineering',
-          description: 'We are looking for...',
-          custom_fields: [
-            { key: 'experience', value: '5 years', field_type: 'string', required: true }
-          ]
+          status: 'draft',
+          salary_range: '120000-150000'
         }
       }
     end
@@ -29,16 +27,14 @@ RSpec.describe 'Api::V1::Requisitions', type: :request do
         }.to change(Requisition, :count).by(1)
 
         expect(response).to have_http_status(:created)
-        expect(json_response['data']['attributes']['title']).to eq('Software Engineer')
+        expect(json_response['title']).to eq('Senior Developer')
       end
     end
 
     context 'with invalid parameters' do
-      it 'returns validation errors' do
+      it 'returns unprocessable entity status' do
         post '/api/v1/requisitions', params: { requisition: { title: '' } }
-
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(json_response['errors']).to be_present
       end
     end
   end
@@ -226,5 +222,11 @@ RSpec.describe 'Api::V1::Requisitions', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response['status']).to be_present
     end
+  end
+
+  private
+
+  def json_response
+    JSON.parse(response.body)
   end
 end

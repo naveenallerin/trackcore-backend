@@ -1,4 +1,6 @@
 class Requisition < ApplicationRecord
+  include AASM
+
   belongs_to :department, counter_cache: true
   belongs_to :user
   belongs_to :template, optional: true
@@ -339,5 +341,100 @@ class Requisition < ApplicationRecord
     department&.name || 'Unknown Department'
   rescue ActiveRecord::RecordNotFound
     'Department Not Found'
+  end
+
+  # Optimistic locking validation
+  validates :lock_version, numericality: { only_integer: true }
+
+  # State machine definition
+  aasm column: 'status' do
+    state :draft, initial: true
+    state :pending_approval
+    state :open
+    state :closed
+
+    event :submit_for_approval do
+      transitions from: :draft, to: :pending_approval
+      after do
+        log_transition("submitted for approval")
+      end
+    end
+
+    event :approve do
+      transitions from: :pending_approval, to: :open, guard: :finance_check
+      after do
+        log_transition("approved and opened")
+        notify_finance_if_needed
+      end
+    end
+
+    event :close do
+      transitions from: [:open, :pending_approval], to: :closed
+      after do
+        log_closure
+      end
+    end
+
+    after_all_transitions :notify_status_change
+  end
+
+  private
+
+  def log_transition(action)
+    Rails.logger.info("[Requisition #{id}] #{action} by user #{Current.user&.id} at #{Time.current}")
+  end
+
+  def log_closure
+    Rails.logger.info("[Requisition #{id}] closed at #{Time.current}")
+    self.closed_at = Time.current
+  end
+
+  def notify_status_change
+    # Trigger any notifications about status changes
+    StatusChangeNotifierJob.perform_async(
+      id,
+      aasm.from_state,
+      aasm.to_state,
+      Current.user&.id
+    )
+  end
+
+  # Add finance threshold constant
+  FINANCE_APPROVAL_THRESHOLD = 100_000
+
+  private
+
+  def finance_check
+    if needs_finance_approval?
+      Rails.logger.info("[Finance Check] Requisition #{id} requires finance approval (salary: #{salary_range})")
+      create_finance_approval_request
+    end
+    true # Allow transition to proceed
+  end
+
+  def needs_finance_approval?
+    salary_range.to_s.gsub(/[^0-9]/, '').to_i > FINANCE_APPROVAL_THRESHOLD
+  end
+
+  def create_finance_approval_request
+    approval_requests.create!(
+      approver_type: 'finance',
+      status: 'pending',
+      notes: "Auto-generated finance approval request for high salary requisition"
+    )
+  end
+
+  def notify_finance_if_needed
+    return unless needs_finance_approval?
+    
+    NotificationService.notify(
+      channel: :finance_team,
+      message: "High salary requisition #{id} needs review",
+      payload: {
+        requisition_id: id,
+        salary_range: salary_range,
+        requested_by: Current.user&.id
+      }
+    )
   end
 end
