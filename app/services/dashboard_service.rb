@@ -9,6 +9,16 @@ class DashboardService
     new(user).drill_down_data(metric)
   end
 
+  def self.basic_stats
+    {
+      total_candidates: Candidate.count,
+      total_requisitions: Requisition.count,
+      hired_candidates: Candidate.where(status: 'hired').count,
+      open_requisitions: Requisition.where(status: 'open').count,
+      metrics_updated_at: Time.current
+    }
+  end
+
   def initialize(user)
     @user = user
   end

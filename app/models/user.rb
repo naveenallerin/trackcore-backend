@@ -3,7 +3,7 @@ gem 'pundit'
 
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
-         :trackable, :validatable, :jwt_authenticatable,
+         :recoverable, :rememberable, :trackable, :validatable, :jwt_authenticatable,
          jwt_revocation_strategy: JwtDenylist
 
   has_secure_password
@@ -45,6 +45,14 @@ class User < ApplicationRecord
     %w[manager admin].include?(role)
   end
 
+  def log_activity(action, details = nil)
+    audit_logs.create!(
+      action: action,
+      details: details,
+      created_at: Time.current
+    )
+  end
+
   private
 
   def set_default_role
@@ -52,12 +60,6 @@ class User < ApplicationRecord
   end
 
   def log_successful_sign_in
-    audit_logs.create!(
-      action: 'sign_in',
-      details: {
-        ip_address: current_sign_in_ip,
-        user_agent: Current.user_agent
-      }.to_json
-    )
+    log_activity('sign_in', 'User signed in successfully')
   end
 end

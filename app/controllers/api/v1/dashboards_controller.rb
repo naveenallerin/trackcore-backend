@@ -59,11 +59,10 @@ module Api
       end
 
       def basic
-        stats = DashboardService.new.basic_stats
+        stats = DashboardService.basic_stats
         render json: stats, status: :ok
       rescue StandardError => e
-        render json: { error: 'Error fetching dashboard stats', details: e.message }, 
-               status: :internal_server_error
+        render json: { error: e.message }, status: :internal_server_error
       end
 
       private

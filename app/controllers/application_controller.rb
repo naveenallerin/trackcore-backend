@@ -2,6 +2,7 @@
 class ApplicationController < ActionController::API
   include Pagy::Backend
   include Pundit::Authorization
+  include ActionController::MimeResponds
   
   # Only include authentication in non-test environments
   unless Rails.env.test?
@@ -10,6 +11,9 @@ class ApplicationController < ActionController::API
     before_action :check_rate_limit
   end
   
+  before_action :authenticate_user!
+  after_action :audit_api_request, if: :user_signed_in?
+
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
   rescue_from ActionController::ParameterMissing, with: :bad_request
   rescue_from AuthenticationError, with: :unauthorized
@@ -87,5 +91,19 @@ class ApplicationController < ActionController::API
 
   def user_not_authorized
     render json: { error: 'You are not authorized to perform this action.' }, status: :forbidden
+  end
+
+  def audit_api_request
+    return unless should_audit_request?
+
+    current_user.log_activity(
+      "api_#{request.method.downcase}",
+      "#{request.method} #{request.path}"
+    )
+  end
+
+  def should_audit_request?
+    !['GET', 'HEAD'].include?(request.method) &&
+      !request.path.start_with?('/health')
   end
 end

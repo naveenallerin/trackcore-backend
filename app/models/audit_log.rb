@@ -1,17 +1,16 @@
 class AuditLog < ApplicationRecord
   belongs_to :user
-  
+
   validates :action, presence: true
-  validates :details, presence: true
 
   scope :recent, -> { order(created_at: :desc).limit(100) }
-  scope :sign_ins, -> { where(action: 'sign_in') }
+  scope :by_action, ->(action) { where(action: action) }
 
-  def self.log_action(user, action, details = {})
+  def self.record(user, action, details = nil)
     create!(
       user: user,
       action: action,
-      details: details.to_json,
+      details: details,
       created_at: Time.current
     )
   end
