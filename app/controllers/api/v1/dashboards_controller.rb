@@ -10,10 +10,16 @@ module Api
       end
 
       def index
-        data = DashboardAggregationService.fetch_data_for(current_user)
+        authorize :dashboard
         
+        stats = if current_user.manager_or_admin?
+                 DashboardService.new(current_user).advanced_stats
+               else
+                 DashboardService.new(current_user).basic_stats
+               end
+
         render json: {
-          data: data,
+          data: stats,
           meta: {
             generated_at: Time.current,
             role: current_user.role
@@ -50,6 +56,14 @@ module Api
       rescue StandardError => e
         Rails.logger.error("Drill-down failed: #{e.message}")
         render json: { error: 'Internal server error' }, status: :internal_server_error
+      end
+
+      def basic
+        stats = DashboardService.new.basic_stats
+        render json: stats, status: :ok
+      rescue StandardError => e
+        render json: { error: 'Error fetching dashboard stats', details: e.message }, 
+               status: :internal_server_error
       end
 
       private

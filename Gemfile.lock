@@ -1,6 +1,8 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    aasm (5.5.0)
+      concurrent-ruby (~> 1.0)
     actioncable (7.0.8.7)
       actionpack (= 7.0.8.7)
       activesupport (= 7.0.8.7)
@@ -318,6 +320,8 @@ GEM
     rack (2.2.10)
     rack-attack (6.7.0)
       rack (>= 1.0, < 4)
+    rack-contrib (2.5.0)
+      rack (< 4)
     rack-cors (2.0.2)
       rack (>= 2.0.0)
     rack-test (2.2.0)
@@ -486,6 +490,7 @@ PLATFORMS
   x86_64-linux-musl
 
 DEPENDENCIES
+  aasm
   active_model_serializers
   aws-sdk-cloudwatch (~> 1.108)
   aws-sdk-s3 (~> 1.86)
@@ -520,6 +525,7 @@ DEPENDENCIES
   puma (~> 5.0)
   pundit
   rack-attack
+  rack-contrib
   rack-cors
   rack-test
   rails (~> 7.0.0)

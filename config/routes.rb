@@ -19,6 +19,7 @@ Rails.application.routes.draw do
       namespace :v1 do
         get 'dashboard', to: 'dashboard#index', defaults: { format: :json }
         get 'dashboard/refresh', to: 'dashboard#refresh'
+        get 'dashboard/basic', to: 'dashboards#basic'
         resources :candidates do
           collection do
             post :bulk_update

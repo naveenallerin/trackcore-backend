@@ -2,6 +2,10 @@ gem 'devise'
 gem 'pundit'
 
 class User < ApplicationRecord
+  devise :database_authenticatable, :registerable,
+         :trackable, :validatable, :jwt_authenticatable,
+         jwt_revocation_strategy: JwtDenylist
+
   has_secure_password
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
@@ -10,6 +14,7 @@ class User < ApplicationRecord
 
   has_many :notes
   belongs_to :department
+  has_many :audit_logs, dependent: :destroy
   
   enum role: {
     basic: 0,
@@ -18,8 +23,13 @@ class User < ApplicationRecord
     admin: 3
   }
 
+  ROLES = %w[admin manager recruiter staff].freeze
+  
+  validates :role, inclusion: { in: ROLES }, allow_nil: true
+
   # Default role on creation
   after_initialize :set_default_role, if: :new_record?
+  after_database_authentication :log_successful_sign_in
 
   def generate_jwt
     payload = {
@@ -31,9 +41,23 @@ class User < ApplicationRecord
 
   scope :with_role, ->(role) { where(role: roles[role]) }
 
+  def manager_or_admin?
+    %w[manager admin].include?(role)
+  end
+
   private
 
   def set_default_role
     self.role ||= :basic
+  end
+
+  def log_successful_sign_in
+    audit_logs.create!(
+      action: 'sign_in',
+      details: {
+        ip_address: current_sign_in_ip,
+        user_agent: Current.user_agent
+      }.to_json
+    )
   end
 end

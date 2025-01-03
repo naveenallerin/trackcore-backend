@@ -1,11 +1,11 @@
 # app/controllers/application_controller.rb
 class ApplicationController < ActionController::API
   include Pagy::Backend
+  include Pundit::Authorization
   
   # Only include authentication in non-test environments
   unless Rails.env.test?
     include ActionController::HttpAuthentication::Token::ControllerMethods
-    include Pundit::Authorization
     before_action :authenticate_request
     before_action :check_rate_limit
   end

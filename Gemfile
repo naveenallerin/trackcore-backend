@@ -19,6 +19,7 @@ gem 'twilio-ruby'
 
 # API & Serialization
 gem 'rack-cors'
+gem 'rack-contrib'  # Add this line
 gem 'graphql'
 gem 'jsonapi-serializer'
 gem 'active_model_serializers'

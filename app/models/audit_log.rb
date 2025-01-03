@@ -1,28 +1,18 @@
 class AuditLog < ApplicationRecord
-  belongs_to :actor, polymorphic: true, optional: true
-  belongs_to :resource, polymorphic: true, optional: true
-
-  validates :event_type, presence: true
-
-  # Event types for compliance tracking
-  EVENTS = {
-    data_access: 'data_access',
-    data_export: 'data_export',
-    data_modification: 'data_modification',
-    authentication: 'authentication',
-    authorization: 'authorization'
-  }.freeze
+  belongs_to :user
+  
+  validates :action, presence: true
+  validates :details, presence: true
 
   scope :recent, -> { order(created_at: :desc).limit(100) }
-  scope :by_event, ->(event) { where(event_type: event) }
+  scope :sign_ins, -> { where(action: 'sign_in') }
 
-  def self.log_access!(actor:, resource:, ip_address: nil, notes: nil)
+  def self.log_action(user, action, details = {})
     create!(
-      event_type: EVENTS[:data_access],
-      actor: actor,
-      resource: resource,
-      ip_address: ip_address,
-      notes: notes
+      user: user,
+      action: action,
+      details: details.to_json,
+      created_at: Time.current
     )
   end
 end

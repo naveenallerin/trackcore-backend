@@ -46,6 +46,16 @@ class DashboardService
     end
   end
 
+  def basic_stats
+    {
+      total_candidates: Candidate.count,
+      total_requisitions: Requisition.count,
+      active_requisitions: Requisition.where(status: 'active').count,
+      hired_candidates: Candidate.where(status: 'hired').count,
+      metrics_updated_at: Time.current
+    }
+  end
+
   private
 
   def cache_key
