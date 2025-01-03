@@ -70,7 +70,7 @@ group :development, :test do
   gem 'factory_bot_rails', '~> 6.2'
   gem 'faker', '~> 3.0'
   gem 'pry-byebug'
-  gem 'shoulda-matchers', '~> 5.0'
+  gem 'shoulda-matchers', '~> 6.4'
   gem 'database_cleaner-active_record'
   gem 'database_cleaner'
   gem 'simplecov', require: false
