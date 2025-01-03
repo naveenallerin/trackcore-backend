@@ -422,7 +422,7 @@ GEM
       bundler-audit (~> 0.9.0)
     rufus-scheduler (3.9.2)
       fugit (~> 1.1, >= 1.11.1)
-    scout_apm (5.4.0)
+    scout_apm (5.5.0)
       parser
     secure_headers (7.1.0)
     sentry-rails (5.22.1)
@@ -539,7 +539,7 @@ DEPENDENCIES
   rubocop-rspec
   ruby-openai
   ruby_audit
-  scout_apm (~> 5.4)
+  scout_apm (~> 5.5)
   secure_headers
   sentry-rails
   sentry-ruby

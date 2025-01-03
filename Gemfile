@@ -86,6 +86,6 @@ group :development, :test do
   gem 'rack-test'
 end
 
-gem "scout_apm", "~> 5.4"
+gem "scout_apm", "~> 5.5"
 gem "newrelic_rpm", "~> 9.16"
 gem "aws-sdk-cloudwatch", "~> 1.108"
