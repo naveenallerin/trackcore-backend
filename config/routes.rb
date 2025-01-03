@@ -240,6 +240,13 @@ Rails.application.routes.draw do
         end
 
         resources :requisitions
+
+        resources :integrations, only: [] do
+          collection do
+            post 'fake_board/:id', to: 'integrations#post_to_fake_board', as: :post_to_fake_board
+            post :request_background_check
+          end
+        end
       end
     end
 
