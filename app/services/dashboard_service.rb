@@ -12,9 +12,9 @@ class DashboardService
   def self.basic_stats
     {
       total_candidates: Candidate.count,
-      total_requisitions: Requisition.count,
-      hired_candidates: Candidate.where(status: 'hired').count,
-      open_requisitions: Requisition.where(status: 'open').count,
+      total_pipelines: Pipeline.count,
+      active_candidates: Candidate.where(status: 'active').count,
+      pipeline_metrics: pipeline_metrics,
       metrics_updated_at: Time.current
     }
   end
@@ -54,16 +54,6 @@ class DashboardService
     else
       raise ArgumentError, "Invalid metric: #{metric}"
     end
-  end
-
-  def basic_stats
-    {
-      total_candidates: Candidate.count,
-      total_requisitions: Requisition.count,
-      active_requisitions: Requisition.where(status: 'active').count,
-      hired_candidates: Candidate.where(status: 'hired').count,
-      metrics_updated_at: Time.current
-    }
   end
 
   private
@@ -146,5 +136,21 @@ class DashboardService
     
     accepted_offers = Requisition.for_department(@user.department).offers_accepted_count
     (accepted_offers.to_f / department_offers * 100).round(2)
+  end
+
+  def self.pipeline_metrics
+    {
+      candidates_in_pipelines: Pipeline.joins(:candidates).distinct.count('candidates.id'),
+      active_pipelines: Pipeline.where(status: 'active').count,
+      avg_pipeline_size: average_pipeline_size
+    }
+  end
+
+  def self.average_pipeline_size
+    total_pipelines = Pipeline.count
+    return 0 if total_pipelines.zero?
+    
+    (Pipeline.joins(:candidates).group('pipelines.id')
+            .count.values.sum.to_f / total_pipelines).round(2)
   end
 end

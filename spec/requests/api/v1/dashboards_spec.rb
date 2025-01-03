@@ -1,6 +1,27 @@
 require 'rails_helper'
 
 RSpec.describe 'Api::V1::Dashboards', type: :request do
+  let(:candidate) { create(:candidate) }
+
+  describe 'GET /api/v1/dashboard' do
+    before do
+      sign_in candidate
+      get '/api/v1/dashboard'
+    end
+
+    it 'returns http success' do
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns dashboard data' do
+      expect(JSON.parse(response.body)).to include(
+        'total_applications',
+        'active_applications',
+        'completed_applications'
+      )
+    end
+  end
+
   describe 'GET /api/v1/dashboard' do
     context 'when user is not authenticated' do
       it 'returns unauthorized status' do

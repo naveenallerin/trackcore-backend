@@ -248,6 +248,17 @@ Rails.application.routes.draw do
             post :request_background_check
           end
         end
+
+        resources :pipelines do
+          member do
+            post :add_candidate
+            delete :remove_candidate
+            post :drip
+          end
+          collection do
+            get :stats
+          end
+        end
       end
     end
 

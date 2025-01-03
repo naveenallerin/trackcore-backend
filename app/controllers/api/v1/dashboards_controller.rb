@@ -59,10 +59,15 @@ module Api
       end
 
       def basic
-        stats = DashboardService.basic_stats
+        stats = Rails.cache.fetch('dashboard_basic_stats', expires_in: 5.minutes) do
+          DashboardService.basic_stats
+        end
+        
         render json: stats, status: :ok
       rescue StandardError => e
-        render json: { error: e.message }, status: :internal_server_error
+        Rails.logger.error("Dashboard stats generation failed: #{e.message}")
+        render json: { error: 'Failed to generate dashboard stats' }, 
+               status: :internal_server_error
       end
 
       private
@@ -72,7 +77,7 @@ module Api
       end
 
       def authorize_dashboard_access!
-        unless current_user.can_access_dashboard?
+        unless current_user.manager_or_admin?
           render json: { error: 'Access denied' }, status: :forbidden
         end
       end
