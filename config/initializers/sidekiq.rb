@@ -11,4 +11,8 @@ Sidekiq.configure_server do |config|
       class: 'ApprovalEscalationJob'
     )
   end
+
+  config.periodic do |mgr|
+    mgr.register('0 9 * * *', OnboardingTaskReminderJob) # Runs daily at 9 AM
+  end
 end

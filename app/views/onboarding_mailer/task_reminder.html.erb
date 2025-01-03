@@ -1,0 +1,16 @@
+<h1>Task Reminder</h1>
+
+<p>Hello <%= @candidate.first_name %>,</p>
+
+<p>This is a reminder that you have a pending onboarding task:</p>
+
+<div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd;">
+  <h2><%= @task.title %></h2>
+  <p><%= @task.description %></p>
+  <p><strong>Due Date:</strong> <%= @due_date %></p>
+</div>
+
+<p>Please complete this task as soon as possible to ensure a smooth onboarding process.</p>
+
+<p>Best regards,<br>
+HR Team</p>

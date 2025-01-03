@@ -734,4 +734,19 @@ class Candidate < ApplicationRecord
       )
     end
   end
+
+  has_many :onboarding_form_submissions
+  
+  def onboarding_complete?
+    required_forms = OnboardingForm.active.required
+    submitted_forms = onboarding_form_submissions.completed
+    
+    required_forms.count == submitted_forms.count
+  end
+
+  def pending_onboarding_forms
+    OnboardingForm.active.required.where.not(
+      id: onboarding_form_submissions.completed.select(:onboarding_form_id)
+    )
+  end
 end

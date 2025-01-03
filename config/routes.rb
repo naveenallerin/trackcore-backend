@@ -231,6 +231,10 @@ Rails.application.routes.draw do
 
         resources :candidate_overviews, only: [:index]
 
+        resources :onboarding, only: [] do
+          post :start, on: :collection
+        end
+
       end
     end
 

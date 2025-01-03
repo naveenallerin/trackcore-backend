@@ -15,4 +15,11 @@ class CandidatePolicy < ApplicationPolicy
       []
     end
   end
+
+  def show_feedback?
+    return true if user.is_a?(Recruiter) && user.active?
+    user == record
+  end
+
+  alias_method :in_context_feedback?, :show_feedback?
 end

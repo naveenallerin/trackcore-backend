@@ -1,0 +1,23 @@
+:concurrency: 10
+:timeout: 30
+:queues:
+  - [critical, 5]
+  - [default, 3]
+  - [low, 1]
+
+:limits:
+  critical: 5
+  default: 3
+  low: 1
+
+:schedule:
+  interview_reminders:
+    cron: "*/15 * * * *"
+    class: "InterviewReminderWorker"
+  automatic_follow_ups:
+    cron: "0 9 * * *"
+    class: "AutomaticFollowUpWorker"
+
+:retry:
+  enabled: true
+  max_retries: 5
